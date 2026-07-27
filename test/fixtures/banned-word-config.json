@@ -1,0 +1,11 @@
+{
+  "prohibitDashes": false,
+  "wordingRules": [
+    {
+      "category": "banned",
+      "pattern": "\\bfoobar\\b",
+      "message": "Do not say foobar.",
+      "severity": "error"
+    }
+  ]
+}

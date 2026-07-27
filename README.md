@@ -1,0 +1,107 @@
+# diction-md
+
+`diction-md` performs deterministic readability and house-style checks on
+Markdown prose. It reports mechanical signals for human review. It does not
+rewrite text, judge technical accuracy, or claim compliance with
+ASD-STE100 Simplified Technical English.
+
+The default rules check:
+
+- sentence length
+- Flesch-Kincaid grade
+- passive-voice candidates
+- long paragraphs
+- marketing language
+- inflated wording
+- empty framing
+- selected idioms
+- em dashes and en dashes
+
+The Markdown parser analyzes prose only. It excludes frontmatter, fenced and
+indented code blocks, inline code, tables, thematic breaks, and reference
+link definitions. It also skips `:::` container markers (a VitePress and
+Docusaurus extension). It keeps paragraphs, headings (ATX and setext), and list items as
+separate blocks. Headings receive wording checks but stay out of the
+readability metrics.
+
+## Run the CLI
+
+Run it directly from this repository:
+
+```console
+node bin/diction-md.mjs docs/index.md
+```
+
+Pass multiple files or shell-expanded globs:
+
+```console
+node bin/diction-md.mjs docs/guide/*.md
+```
+
+The default output is advisory and exits successfully. `--strict` exits with
+status 1 when the results contain an error-level finding. Among the default
+rules only the dash check reports errors; wording rules opt in through
+`severity`. `--json` produces machine-readable output. Unknown options and
+unreadable files stop the run with status 1.
+
+```console
+node bin/diction-md.mjs --json docs/*.md
+node bin/diction-md.mjs --strict docs/*.md
+```
+
+`--config <file.json>` loads option overrides from a JSON file. Patterns in
+`wordingRules` are strings compiled as regular expressions with flags `gi`
+unless the rule sets `flags`:
+
+```json
+{
+  "hardSentenceWords": 22,
+  "wordingRules": [
+    {
+      "category": "banned",
+      "pattern": "\\bsynergy\\b",
+      "message": "Name the concrete benefit.",
+      "severity": "error"
+    }
+  ]
+}
+```
+
+## Use the library
+
+```javascript
+import { lintMarkdown } from "diction-md";
+
+const result = lintMarkdown(markdown);
+```
+
+`lintMarkdown` accepts optional threshold and rule overrides:
+
+```javascript
+const result = lintMarkdown(markdown, {
+  hardSentenceWords: 22,
+  veryHardSentenceWords: 32,
+  gradeTarget: 9,
+  longParagraphSentences: 5,
+  wordingRules: [
+    {
+      category: "banned",
+      pattern: /\bsynergy\b/gi,
+      message: "Name the concrete benefit.",
+      severity: "error",
+    },
+  ],
+});
+```
+
+`wordingRules` replaces the default rule set (exported as
+`DEFAULT_WORDING_RULES`). Findings default to `warning` severity; a rule with
+`severity: "error"` fails `--strict` runs.
+
+## Development
+
+```console
+npm test
+```
+
+The runtime and test suite have no third-party dependencies.
