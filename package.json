@@ -24,8 +24,16 @@
   "engines": {
     "node": ">=20"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arrai-innovations/diction-md.git"
+  },
   "author": "Arrai Innovations Inc. <developers@arrai.com>",
   "license": "BSD-3-Clause",
+  "bugs": {
+    "url": "https://github.com/arrai-innovations/diction-md/issues"
+  },
+  "homepage": "https://github.com/arrai-innovations/diction-md#readme",
   "packageManager": "pnpm@11.9.0",
   "devDependencies": {
     "@arrai-innovations/commitlint-config": "^2.1.0",
