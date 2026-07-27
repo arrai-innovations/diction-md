@@ -1,0 +1,43 @@
+commit-msg:
+    commands:
+        commitlint:
+            run: pnpm exec commitlint --edit "$1"
+
+pre-commit:
+    parallel: false
+    commands:
+        eslint:
+            run: |
+                if [ -z "${CI:-}" ]; then
+                  exit 0
+                fi
+                pnpm exec eslint --cache bin src test eslint.config.mjs
+        prettier:
+            run: |
+                if [ -z "${CI:-}" ]; then
+                  exit 0
+                fi
+                pnpm exec prettier --check .
+        fix-eslint:
+            stage_fixed: true
+            glob: "**/*.{js,cjs,mjs}"
+            exclude:
+                - "**/node_modules/**"
+                - "**/coverage/**"
+            run: pnpm exec eslint --cache --fix --no-warn-ignored {staged_files}
+        fix-prettier:
+            stage_fixed: true
+            glob: "**/*.{js,mjs,cjs,json,md,yml,yaml}"
+            exclude:
+                - "**/node_modules/**"
+                - "**/coverage/**"
+                - "pnpm-lock.yaml"
+                - "test/fixtures/**"
+            run: pnpm exec prettier --write {staged_files}
+        fix-md-toc:
+            stage_fixed: true
+            glob: "**/*.md"
+            exclude:
+                - "test/fixtures/**"
+                - "**/AGENTS.md"
+            run: pnpm exec doctoc --github -u --loglevel error {staged_files}

@@ -1,9 +1,23 @@
 # diction-md
 
+[![License: BSD-3-Clause](https://img.shields.io/badge/License-BSD--3--Clause-blue.svg?style=for-the-badge)](./LICENSE)
+
 `diction-md` performs deterministic readability and house-style checks on
 Markdown prose. It reports mechanical signals for human review. It does not
 rewrite text, judge technical accuracy, or claim compliance with
 ASD-STE100 Simplified Technical English.
+
+<!-- prettier-ignore-start -->
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Run the CLI](#run-the-cli)
+- [Use the library](#use-the-library)
+- [Development](#development)
+- [License](#license)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+<!-- prettier-ignore-end -->
 
 The default rules check:
 
@@ -55,22 +69,22 @@ unless the rule sets `flags`:
 
 ```json
 {
-  "hardSentenceWords": 22,
-  "wordingRules": [
-    {
-      "category": "banned",
-      "pattern": "\\bsynergy\\b",
-      "message": "Name the concrete benefit.",
-      "severity": "error"
-    }
-  ]
+    "hardSentenceWords": 22,
+    "wordingRules": [
+        {
+            "category": "banned",
+            "pattern": "\\bsynergy\\b",
+            "message": "Name the concrete benefit.",
+            "severity": "error"
+        }
+    ]
 }
 ```
 
 ## Use the library
 
 ```javascript
-import { lintMarkdown } from "diction-md";
+import { lintMarkdown } from "@arrai-innovations/diction-md";
 
 const result = lintMarkdown(markdown);
 ```
@@ -79,18 +93,18 @@ const result = lintMarkdown(markdown);
 
 ```javascript
 const result = lintMarkdown(markdown, {
-  hardSentenceWords: 22,
-  veryHardSentenceWords: 32,
-  gradeTarget: 9,
-  longParagraphSentences: 5,
-  wordingRules: [
-    {
-      category: "banned",
-      pattern: /\bsynergy\b/gi,
-      message: "Name the concrete benefit.",
-      severity: "error",
-    },
-  ],
+    hardSentenceWords: 22,
+    veryHardSentenceWords: 32,
+    gradeTarget: 9,
+    longParagraphSentences: 5,
+    wordingRules: [
+        {
+            category: "banned",
+            pattern: /\bsynergy\b/gi,
+            message: "Name the concrete benefit.",
+            severity: "error",
+        },
+    ],
 });
 ```
 
@@ -101,7 +115,15 @@ const result = lintMarkdown(markdown, {
 ## Development
 
 ```console
-npm test
+pnpm install
+pnpm test
 ```
 
-The runtime and test suite have no third-party dependencies.
+The runtime and test suite have no third-party dependencies. Development
+tooling (ESLint, Prettier, commitlint, doctoc, and lefthook) installs through
+pnpm; `pnpm install` also installs the git hooks. Commit messages follow the
+Conventional Commits format enforced by commitlint.
+
+## License
+
+Released under the [BSD 3-Clause License](./LICENSE).
