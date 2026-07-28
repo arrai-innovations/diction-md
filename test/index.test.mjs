@@ -163,6 +163,17 @@ A separate paragraph without punctuation`;
         );
     });
 
+    it("splits a sentence that opens with an inline code span", () => {
+        const source = "Both inputs are required. `pkKey` names the primary key field.";
+        const result = lintMarkdown(source);
+
+        assert.equal(result.metrics.sentences, 2);
+        assert.deepEqual(splitSentences(extractProseBlocks(source)[0].display), [
+            "Both inputs are required.",
+            "`pkKey` names the primary key field.",
+        ]);
+    });
+
     it("falls back to the whole block when display sentences do not align", () => {
         const source = `Call \`render(). Then\` again ${"and again ".repeat(20)}and again.`;
         const result = lintMarkdown(source);

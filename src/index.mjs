@@ -3,7 +3,15 @@ const PASSIVE =
 
 const WORD_PATTERN = /[A-Za-z0-9][A-Za-z0-9'’/-]*/g;
 
-const SENTENCE_BOUNDARY = /(?<=[.!?])(?<!\b(?:[eE]\.g|[iI]\.e|[vV]s|[cC]f)\.)\s+(?=["'(]?[A-Z0-9])/g;
+// A sentence can open with an inline code span, which reads as a lowercase
+// start: the token "code" in analysis text, a backtick in display text. Both
+// join the sentence-case starts the boundary already accepts.
+const SENTENCE_START = String.raw`["'(]?(?:[A-Z0-9]|\x60|code\b)`;
+
+const SENTENCE_BOUNDARY = new RegExp(
+    String.raw`(?<=[.!?])(?<!\b(?:[eE]\.g|[iI]\.e|[vV]s|[cC]f)\.)\s+(?=${SENTENCE_START})`,
+    "g",
+);
 
 const TABLE_DELIMITER = /^\|?(?:\s*:?-+:?\s*\|)+\s*:?-+:?\s*\|?$/;
 
