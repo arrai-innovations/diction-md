@@ -79,29 +79,41 @@ export const DEFAULT_OPTIONS = {
     prohibitDashes: true,
 };
 
-function normalizeInlineMarkdown(text, codeReplacement) {
-    return text
+function normalizeInlineMarkdown(text, renderCode) {
+    const codeSpans = [];
+    // Code spans hold out of every pass below. Their content is literal, so a
+    // `<tag>` or a trailing `*` inside one must not read as HTML or emphasis.
+    // NUL cannot appear in Markdown source, so it delimits the placeholders.
+    const guarded = text
+        .replace(/\0/g, "")
+        .replace(/`([^`\n]*)`/g, (match, content) => `\0${codeSpans.push(content) - 1}\0`);
+
+    return guarded
         .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
         .replace(/!\[[^\]]*\]\[[^\]]*\]/g, "")
         .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
         .replace(/\[([^\]]+)\]\[[^\]]*\]/g, "$1")
-        .replace(/`([^`\n]*)`/g, codeReplacement)
         .replace(/<[^>\n]+>/g, "")
         .replace(/\*{1,2}([^*\n]+)\*{1,2}/g, "$1")
         .replace(/(?<![A-Za-z0-9])_{1,2}([^_\n]+)_{1,2}(?![A-Za-z0-9])/g, "$1")
         .replace(/\s+/g, " ")
-        .trim();
+        .trim()
+        .replace(/\0(\d+)\0/g, (match, index) => renderCode(codeSpans[index]));
+}
+
+function analysisInlineMarkdown(text) {
+    return normalizeInlineMarkdown(text, () => "code");
 }
 
 function displayInlineMarkdown(text) {
-    return normalizeInlineMarkdown(text, "`$1`");
+    return normalizeInlineMarkdown(text, (content) => `\`${content}\``);
 }
 
 function buildLineOffsets(parts, analysis) {
     const offsets = [];
     let joined = "";
     for (const part of parts) {
-        const normalized = normalizeInlineMarkdown(part.text, "code");
+        const normalized = analysisInlineMarkdown(part.text);
         if (!normalized) {
             continue;
         }
@@ -145,7 +157,7 @@ export function extractProseBlocks(source) {
         }
         previousKind = block.kind;
         const raw = block.parts.map((part) => part.text).join("\n");
-        const analysis = normalizeInlineMarkdown(raw, "code");
+        const analysis = analysisInlineMarkdown(raw);
         if (analysis) {
             blocks.push({
                 kind: block.kind,

@@ -163,6 +163,14 @@ A separate paragraph without punctuation`;
         );
     });
 
+    it("keeps code span content out of the link, HTML, and emphasis passes", () => {
+        const source = "Wrap **`<KeepAlive>`, `intendTo*`, and `[label](href)`** in one clause.";
+        const block = extractProseBlocks(source)[0];
+
+        assert.equal(block.display, "Wrap `<KeepAlive>`, `intendTo*`, and `[label](href)` in one clause.");
+        assert.equal(block.analysis, "Wrap code, code, and code in one clause.");
+    });
+
     it("splits a sentence that opens with an inline code span", () => {
         const source = "Both inputs are required. `pkKey` names the primary key field.";
         const result = lintMarkdown(source);
