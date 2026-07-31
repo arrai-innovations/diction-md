@@ -1,5 +1,6 @@
 # diction-md
 
+[![npm](https://img.shields.io/npm/v/%40arrai-innovations%2Fdiction-md.svg?style=for-the-badge)](https://www.npmjs.com/package/@arrai-innovations/diction-md)
 ![Tests](https://docs.arrai.dev/diction-md/artifacts/main/tests.svg)
 [![Coverage](https://docs.arrai.dev/diction-md/artifacts/main/tests.coverage.svg)](https://docs.arrai.dev/diction-md/artifacts/main/coverage_tests/)
 ![ESLint](https://docs.arrai.dev/diction-md/artifacts/main/eslint.svg)
