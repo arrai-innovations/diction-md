@@ -2,7 +2,7 @@ version: 2.1
 
 orbs:
     github: arrai/github@5.0.0
-    lintinator: arrai/lintinator@2.1.6
+    lintinator: arrai/lintinator@2.1.8
     pnpm: arrai/pnpm@2.0.0
     utils: arrai/utils@1.23.0
 
