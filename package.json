@@ -1,11 +1,10 @@
 {
   "name": "@arrai-innovations/diction-md",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Deterministic readability and house-style checks for Markdown prose.",
   "type": "module",
-  "private": true,
   "bin": {
-    "diction-md": "./bin/diction-md.mjs"
+    "diction-md": "bin/diction-md.mjs"
   },
   "exports": {
     ".": "./src/index.mjs"
@@ -22,7 +21,11 @@
     "prepare": "lefthook install"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
   },
   "repository": {
     "type": "git",

@@ -40,16 +40,23 @@ readability metrics.
 
 ## Run the CLI
 
-Run it directly from this repository:
+Run it without installing it:
 
 ```console
-node bin/diction-md.mjs docs/index.md
+pnpm dlx @arrai-innovations/diction-md docs/index.md
+```
+
+Or install it as a development dependency:
+
+```console
+pnpm add --save-dev @arrai-innovations/diction-md
+pnpm exec diction-md docs/index.md
 ```
 
 Pass multiple files or shell-expanded globs:
 
 ```console
-node bin/diction-md.mjs docs/guide/*.md
+pnpm exec diction-md docs/guide/*.md
 ```
 
 The default output is advisory and exits successfully. `--strict` exits with
@@ -59,8 +66,8 @@ rules only the dash check reports errors; wording rules opt in through
 unreadable files stop the run with status 1.
 
 ```console
-node bin/diction-md.mjs --json docs/*.md
-node bin/diction-md.mjs --strict docs/*.md
+pnpm exec diction-md --json docs/*.md
+pnpm exec diction-md --strict docs/*.md
 ```
 
 `--config <file.json>` loads option overrides from a JSON file. Patterns in
@@ -82,6 +89,12 @@ unless the rule sets `flags`:
 ```
 
 ## Use the library
+
+Install it as a dependency:
+
+```console
+pnpm add @arrai-innovations/diction-md
+```
 
 ```javascript
 import { lintMarkdown } from "@arrai-innovations/diction-md";
@@ -111,6 +124,29 @@ const result = lintMarkdown(markdown, {
 `wordingRules` replaces the default rule set (exported as
 `DEFAULT_WORDING_RULES`). Findings default to `warning` severity; a rule with
 `severity: "error"` fails `--strict` runs.
+
+The result contains aggregate readability metrics and a list of findings:
+
+```javascript
+{
+    metrics: {
+        sentences: 4,
+        words: 58,
+        averageWordsPerSentence: 14.5,
+        fleschKincaidGrade: 8.2,
+        gradeTarget: 10,
+    },
+    findings: [
+        {
+            severity: "warning",
+            category: "marketing",
+            line: 3,
+            message: '"robust": Check that this claim is specific and supported.',
+            text: "This robust helper handles the request.",
+        },
+    ],
+}
+```
 
 ## Development
 
