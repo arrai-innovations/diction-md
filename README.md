@@ -9,8 +9,7 @@
 
 `diction-md` performs deterministic readability and house-style checks on
 Markdown prose. It reports mechanical signals for human review. It does not
-rewrite text, judge technical accuracy, or claim compliance with
-ASD-STE100 Simplified Technical English.
+rewrite text or judge technical accuracy.
 
 <!-- prettier-ignore-start -->
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
@@ -18,6 +17,11 @@ ASD-STE100 Simplified Technical English.
 
 - [Run the CLI](#run-the-cli)
 - [Use the library](#use-the-library)
+  - [`lintMarkdown(source, options)`](#lintmarkdownsource-options)
+  - [`extractProseBlocks(source)`](#extractproseblockssource)
+  - [`splitSentences(text)`](#splitsentencestext)
+  - [`wordCount(text)`](#wordcounttext)
+  - [Defaults](#defaults)
 - [Development](#development)
 - [License](#license)
 
@@ -107,6 +111,8 @@ import { lintMarkdown } from "@arrai-innovations/diction-md";
 const result = lintMarkdown(markdown);
 ```
 
+### `lintMarkdown(source, options)`
+
 `lintMarkdown` accepts optional threshold and rule overrides:
 
 ```javascript
@@ -151,6 +157,57 @@ The result contains aggregate readability metrics and a list of findings:
         },
     ],
 }
+```
+
+### `extractProseBlocks(source)`
+
+`extractProseBlocks` returns the Markdown prose blocks that the linter analyzes.
+Each block contains:
+
+- `kind`: `heading`, `paragraph`, or `list-item`
+- `line`: the one-based source line where the block starts
+- `includeInMetrics`: whether the block contributes to readability metrics
+- `raw`: the source text without its Markdown block marker
+- `analysis`: normalized text used by the checks
+- `display`: normalized text retained for findings
+- `lineOffsets`: normalized-text offsets mapped to source lines
+
+```javascript
+import { extractProseBlocks } from "@arrai-innovations/diction-md";
+
+const blocks = extractProseBlocks(markdown);
+```
+
+### `splitSentences(text)`
+
+`splitSentences` divides plain or normalized prose into sentence strings. It
+accounts for the abbreviations recognized by the linter.
+
+```javascript
+import { splitSentences } from "@arrai-innovations/diction-md";
+
+const sentences = splitSentences("First sentence. Second sentence?");
+```
+
+### `wordCount(text)`
+
+`wordCount` returns the number of word tokens recognized by the readability
+checks.
+
+```javascript
+import { wordCount } from "@arrai-innovations/diction-md";
+
+const words = wordCount("A well-known helper ships 12 utilities.");
+```
+
+### Defaults
+
+`DEFAULT_OPTIONS` contains every default threshold and setting.
+`DEFAULT_WORDING_RULES` contains the default marketing, inflated-wording,
+empty-framing, and idiom rules.
+
+```javascript
+import { DEFAULT_OPTIONS, DEFAULT_WORDING_RULES } from "@arrai-innovations/diction-md";
 ```
 
 ## Development
