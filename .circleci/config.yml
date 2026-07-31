@@ -1,0 +1,208 @@
+version: 2.1
+
+orbs:
+    github: arrai/github@5.0.0
+    lintinator: arrai/lintinator@2.1.6
+    pnpm: arrai/pnpm@2.0.0
+    utils: arrai/utils@1.23.0
+
+jobs:
+    test:
+        executor: pnpm/lts
+        resource_class: small
+        steps:
+            - checkout
+            - pnpm/install_pnpm
+            - restore_cache:
+                  keys:
+                      - pnpm-v1-{{ arch }}-{{ checksum "pnpm-lock.yaml" }}
+            - run:
+                  name: Install dependencies
+                  command: pnpm install --frozen-lockfile
+            - save_cache:
+                  paths:
+                      - ~/.local/share/pnpm/store
+                  key: pnpm-v1-{{ arch }}-{{ checksum "pnpm-lock.yaml" }}
+            - run:
+                  name: Run tests
+                  command: pnpm test
+            - run:
+                  name: Check package contents
+                  command: npm pack --dry-run --ignore-scripts
+
+    coverage:
+        executor: pnpm/lts
+        resource_class: medium
+        circleci_ip_ranges: true
+        steps:
+            - checkout
+            - utils/add_ssh_config
+            - pnpm/install_pnpm
+            - restore_cache:
+                  keys:
+                      - pnpm-v1-{{ arch }}-{{ checksum "pnpm-lock.yaml" }}
+            - run:
+                  name: Install dependencies
+                  command: pnpm install --frozen-lockfile
+            - save_cache:
+                  paths:
+                      - ~/.local/share/pnpm/store
+                  key: pnpm-v1-{{ arch }}-{{ checksum "pnpm-lock.yaml" }}
+            - run:
+                  name: Run tests with coverage
+                  command: pnpm coverage
+            - run:
+                  name: Check package contents
+                  command: npm pack --dry-run --ignore-scripts
+            - store_artifacts:
+                  path: coverage
+                  destination: coverage
+            - utils/rsync_folder:
+                  when: always
+                  folder: ~/project/coverage/
+                  remote_folder: ${CIRCLE_BRANCH}/coverage_${CIRCLE_JOB}
+                  host: docs
+            - utils/make_status_shield:
+                  when: on_fail
+                  status: errors
+                  color: red
+                  logo: Node.js
+            - utils/make_status_shield:
+                  when: on_success
+                  status: passed
+                  color: brightgreen
+                  logo: Node.js
+            - utils/rsync_file:
+                  when: always
+                  file: ~/status.svg
+                  remote_file: ${CIRCLE_BRANCH}/${CIRCLE_JOB}.svg
+                  host: docs
+            - run:
+                  name: Create coverage report
+                  when: always
+                  command: |
+                      jq 'if (.total.branches.pct | type) == "number" and (.total.statements.pct | type) == "number" then ((.total.branches.pct + .total.statements.pct) / 2) else 0 end | floor' coverage/coverage-summary.json > /tmp/.coveragep
+            - utils/make_coverage_shield:
+                  when: always
+                  link: https://${DOCS_HOST}/${CIRCLE_PROJECT_REPONAME}/artifacts/${CIRCLE_BRANCH}/coverage_${CIRCLE_JOB}/
+            - utils/rsync_file:
+                  when: always
+                  file: /tmp/coverage.svg
+                  remote_file: ${CIRCLE_BRANCH}/${CIRCLE_JOB}.coverage.svg
+                  host: docs
+
+    verify-release-version:
+        executor: pnpm/lts
+        resource_class: small
+        steps:
+            - checkout
+            - run:
+                  name: Check that the tag matches the package version
+                  command: |
+                      PACKAGE_VERSION=$(node -p "require('./package.json').version")
+                      if [ "$CIRCLE_TAG" != "v${PACKAGE_VERSION}" ]; then
+                        echo "Git tag (${CIRCLE_TAG}) does not match the package version (v${PACKAGE_VERSION})."
+                        exit 1
+                      fi
+
+workflows:
+    ci:
+        jobs:
+            - coverage:
+                  name: tests
+                  context: arrai-global
+                  filters:
+                      branches:
+                          only: main
+            - test:
+                  name: tests-no-badge
+                  filters:
+                      tags:
+                          only: /^v[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$/
+                      branches:
+                          ignore: main
+            - verify-release-version:
+                  context: arrai-global
+                  filters:
+                      tags:
+                          only: /^v[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$/
+                      branches:
+                          ignore: /.*/
+            - lintinator/lint_python_fixed_ip:
+                  name: lint
+                  context: arrai-global
+                  executor: lintinator/node-lts
+                  hooks: prettier eslint
+                  hook_manager: lefthook
+                  install_deps: false
+                  setup:
+                      - pnpm/install_pnpm
+                      - run:
+                            name: Install dependencies
+                            command: pnpm install --frozen-lockfile
+                  filters:
+                      branches:
+                          only: main
+            - lintinator/lint_python:
+                  name: lint-no-badge
+                  context: arrai-global
+                  executor: lintinator/node-lts
+                  hooks: prettier eslint
+                  hook_manager: lefthook
+                  install_deps: false
+                  create_badges: false
+                  setup:
+                      - pnpm/install_pnpm
+                      - run:
+                            name: Install dependencies
+                            command: pnpm install --frozen-lockfile
+                  filters:
+                      tags:
+                          only: /^v[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$/
+                      branches:
+                          ignore: main
+            - pnpm/audit_fixed_ip:
+                  name: audit
+                  context: arrai-global
+                  executor: pnpm/lts
+                  skip_dev: false
+                  npm_registry: registry.npmjs.org
+                  filters:
+                      branches:
+                          only: main
+            - pnpm/audit:
+                  name: audit-no-badge
+                  context: arrai-global
+                  executor: pnpm/lts
+                  skip_dev: false
+                  create_badges: false
+                  npm_registry: registry.npmjs.org
+                  filters:
+                      tags:
+                          only: /^v[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$/
+                      branches:
+                          ignore: main
+            - pnpm/publish:
+                  name: publish
+                  context: arrai-global
+                  oidc: true
+                  requires:
+                      - tests-no-badge
+                      - verify-release-version
+                      - lint-no-badge
+                      - audit-no-badge
+                  filters:
+                      tags:
+                          only: /^v[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$/
+                      branches:
+                          ignore: /.*/
+            - github/create_release:
+                  name: release-on-github
+                  context: arrai-global
+                  requires:
+                      - publish
+                  filters:
+                      tags:
+                          only: /^v[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$/
+                      branches:
+                          ignore: /.*/
