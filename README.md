@@ -1,5 +1,10 @@
 # diction-md
 
+![Tests](https://docs.arrai.dev/diction-md/artifacts/main/tests.svg)
+[![Coverage](https://docs.arrai.dev/diction-md/artifacts/main/tests.coverage.svg)](https://docs.arrai.dev/diction-md/artifacts/main/coverage_tests/)
+![ESLint](https://docs.arrai.dev/diction-md/artifacts/main/eslint.svg)
+![Prettier](https://docs.arrai.dev/diction-md/artifacts/main/prettier.svg)
+![Audit](https://docs.arrai.dev/diction-md/artifacts/main/pnpm-audit.svg)
 [![License: BSD-3-Clause](https://img.shields.io/badge/License-BSD--3--Clause-blue.svg?style=for-the-badge)](./LICENSE)
 
 `diction-md` performs deterministic readability and house-style checks on
