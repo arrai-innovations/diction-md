@@ -253,6 +253,8 @@ tooling (ESLint, Prettier, commitlint, doctoc, and lefthook) installs through
 pnpm; `pnpm install` also installs the git hooks. Commit messages follow the
 Conventional Commits format enforced by commitlint.
 
+Notable changes per release are recorded in [CHANGELOG.md](./CHANGELOG.md).
+
 ## License
 
 Released under the [BSD 3-Clause License](./LICENSE).
