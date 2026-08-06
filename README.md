@@ -17,6 +17,7 @@ rewrite text or judge technical accuracy.
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [Run the CLI](#run-the-cli)
+- [Suppress findings](#suppress-findings)
 - [Use the library](#use-the-library)
   - [`lintMarkdown(source, options)`](#lintmarkdownsource-options)
   - [`extractProseBlocks(source)`](#extractproseblockssource)
@@ -97,6 +98,35 @@ unless the rule sets `flags`:
     ]
 }
 ```
+
+## Suppress findings
+
+Directive comments suppress findings for prose you have reviewed and decided
+to keep. A directive is an HTML comment on its own line. It optionally names
+the finding categories it covers; a directive without categories covers every
+category.
+
+```markdown
+<!-- diction-md-disable-next-line passive-voice -->
+
+The passive sentence below the comment stays as written.
+
+<!-- diction-md-disable marketing -->
+
+This section quotes promotional copy verbatim.
+
+<!-- diction-md-enable marketing -->
+```
+
+`disable-next-line` covers findings reported on the following source line.
+Sentence findings report the line where the sentence starts, so place the
+directive directly above that line, even inside a paragraph. `disable` covers
+findings until a matching `enable`, or the end of the file when unmatched.
+
+Category names match the `category` field of findings; unknown names have no
+effect. The scanner skips directives inside code fences. Suppressed prose
+still counts toward the readability metrics: suppression silences findings
+without changing the document's score.
 
 ## Use the library
 

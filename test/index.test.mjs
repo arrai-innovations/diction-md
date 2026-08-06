@@ -325,6 +325,93 @@ A separate paragraph without punctuation`;
         assert.equal(result.findings[0].severity, "error");
     });
 
+    it("suppresses findings on the line after disable-next-line", () => {
+        const source = "<!-- diction-md-disable-next-line -->\nThe cache was cleared by a powerful runtime.";
+
+        assert.deepEqual(lintMarkdown(source).findings, []);
+    });
+
+    it("scopes disable-next-line to the listed categories", () => {
+        const source =
+            "<!-- diction-md-disable-next-line passive-voice -->\nThe cache was cleared by a powerful runtime.";
+
+        assert.deepEqual(
+            lintMarkdown(source).findings.map(({ category }) => category),
+            ["marketing"],
+        );
+    });
+
+    it("accepts comma-separated directive categories", () => {
+        const source =
+            "<!-- diction-md-disable-next-line passive-voice, marketing -->\nThe cache was cleared by a powerful runtime.";
+
+        assert.deepEqual(lintMarkdown(source).findings, []);
+    });
+
+    it("applies disable-next-line to a line inside a paragraph", () => {
+        const source =
+            "First line stays fine here.\n<!-- diction-md-disable-next-line -->\nThe cache was cleared by a powerful runtime.";
+
+        assert.deepEqual(lintMarkdown(source).findings, []);
+    });
+
+    it("suppresses findings between disable and enable", () => {
+        const source = [
+            "<!-- diction-md-disable marketing -->",
+            "",
+            "The first powerful feature.",
+            "",
+            "<!-- diction-md-enable marketing -->",
+            "",
+            "The second powerful feature.",
+        ].join("\n");
+        const findings = lintMarkdown(source).findings;
+
+        assert.equal(findings.length, 1);
+        assert.equal(findings[0].line, 7);
+    });
+
+    it("closes every open disable on a bare enable", () => {
+        const source = [
+            "<!-- diction-md-disable marketing -->",
+            "",
+            "<!-- diction-md-enable -->",
+            "",
+            "A powerful feature.",
+        ].join("\n");
+
+        assert.equal(lintMarkdown(source).findings.length, 1);
+    });
+
+    it("runs an unmatched disable to the end of the file", () => {
+        const source = "<!-- diction-md-disable -->\n\nA powerful feature.\n\nThe cache was cleared by the runtime.";
+
+        assert.deepEqual(lintMarkdown(source).findings, []);
+    });
+
+    it("keeps suppressed prose in the readability metrics", () => {
+        const source = "<!-- diction-md-disable -->\n\nA powerful feature.";
+        const result = lintMarkdown(source);
+
+        assert.deepEqual(result.findings, []);
+        assert.equal(result.metrics.sentences, 1);
+        assert.equal(result.metrics.words, 3);
+    });
+
+    it("ignores directives inside fenced code blocks", () => {
+        const source = "```\n<!-- diction-md-disable -->\n```\n\nA powerful feature.";
+        const findings = lintMarkdown(source).findings;
+
+        assert.equal(findings.length, 1);
+        assert.equal(findings[0].category, "marketing");
+    });
+
+    it("ignores unknown directive categories", () => {
+        const source = "<!-- diction-md-disable-next-line no-such-check -->\nA powerful feature.";
+
+        assert.equal(lintMarkdown(source).findings.length, 1);
+    });
+
     it("splits ordinary prose sentences", () => {
         assert.deepEqual(splitSentences("First sentence. Second sentence? Third sentence!"), [
             "First sentence.",
