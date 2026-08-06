@@ -15,6 +15,23 @@ const SENTENCE_BOUNDARY = new RegExp(
 
 const TABLE_DELIMITER = /^\|?(?:\s*:?-+:?\s*\|)+\s*:?-+:?\s*\|?$/;
 
+const FENCE_PATTERN = /^\s*(`{3,}|~{3,})(.*)$/;
+
+// A closing fence uses the same character, is at least as long as the
+// opening fence, and carries no info string.
+function closesFence(fence, fenceMatch) {
+    return (
+        Boolean(fenceMatch) &&
+        fenceMatch[1][0] === fence[0] &&
+        fenceMatch[1].length >= fence.length &&
+        !fenceMatch[2].trim()
+    );
+}
+
+// A directive is an HTML comment on its own line, optionally naming the
+// finding categories it covers. No categories means every category.
+const DIRECTIVE_PATTERN = /^\s{0,3}<!--\s*diction-md-(disable-next-line|disable|enable)((?:[\s,]+[\w-]+)*)\s*-->\s*$/;
+
 export const DEFAULT_WORDING_RULES = [
     {
         category: "marketing",
@@ -124,9 +141,9 @@ function buildLineOffsets(parts, analysis) {
         joined += normalized;
     }
     // Inline spans that cross source lines normalize differently per line;
-    // attribute the whole block to its first line in that case.
+    // attribute the whole block to its first contributing line in that case.
     if (joined !== analysis) {
-        return [{ offset: 0, line: parts[0].line }];
+        return [{ offset: 0, line: offsets[0]?.line ?? parts[0].line }];
     }
     return offsets;
 }
@@ -159,14 +176,17 @@ export function extractProseBlocks(source) {
         const raw = block.parts.map((part) => part.text).join("\n");
         const analysis = analysisInlineMarkdown(raw);
         if (analysis) {
+            const lineOffsets = buildLineOffsets(block.parts, analysis);
             blocks.push({
                 kind: block.kind,
-                line: block.line,
+                // A block can open with lines that normalize to nothing (an HTML
+                // comment, an image); findings belong to the first prose line.
+                line: lineOffsets[0].line,
                 includeInMetrics: block.includeInMetrics,
                 raw,
                 analysis,
                 display: displayInlineMarkdown(raw),
-                lineOffsets: buildLineOffsets(block.parts, analysis),
+                lineOffsets,
             });
         }
         block = undefined;
@@ -188,16 +208,9 @@ export function extractProseBlocks(source) {
             continue;
         }
 
-        const fenceMatch = originalLine.match(/^\s*(`{3,}|~{3,})(.*)$/);
+        const fenceMatch = originalLine.match(FENCE_PATTERN);
         if (fence) {
-            // A closing fence uses the same character, is at least as long as the
-            // opening fence, and carries no info string.
-            if (
-                fenceMatch &&
-                fenceMatch[1][0] === fence[0] &&
-                fenceMatch[1].length >= fence.length &&
-                !fenceMatch[2].trim()
-            ) {
+            if (closesFence(fence, fenceMatch)) {
                 fence = undefined;
             }
             continue;
@@ -330,6 +343,72 @@ function allMatches(text, pattern) {
     return [...text.matchAll(new RegExp(pattern.source, flags))];
 }
 
+// Suppression ranges hold one category each; "*" covers every category.
+// disable-next-line covers the following line. disable opens a range that a
+// matching enable closes; an unmatched disable runs to the end of the file.
+function buildSuppressions(source) {
+    const lines = source.split(/\r?\n/);
+    const ranges = [];
+    const open = new Map();
+    let fence;
+    let inFrontmatter = lines[0]?.trim() === "---";
+
+    for (const [index, line] of lines.entries()) {
+        if (inFrontmatter) {
+            if (index > 0 && line.trim() === "---") {
+                inFrontmatter = false;
+            }
+            continue;
+        }
+        const fenceMatch = line.match(FENCE_PATTERN);
+        if (fence) {
+            if (closesFence(fence, fenceMatch)) {
+                fence = undefined;
+            }
+            continue;
+        }
+        if (fenceMatch) {
+            fence = fenceMatch[1];
+            continue;
+        }
+
+        const directive = line.match(DIRECTIVE_PATTERN);
+        if (!directive) {
+            continue;
+        }
+        const lineNumber = index + 1;
+        const categories = directive[2].split(/[\s,]+/).filter(Boolean);
+        const keys = categories.length ? categories : ["*"];
+        if (directive[1] === "disable-next-line") {
+            ranges.push(...keys.map((category) => ({ category, start: lineNumber + 1, end: lineNumber + 1 })));
+        } else if (directive[1] === "disable") {
+            for (const key of keys) {
+                if (!open.has(key)) {
+                    open.set(key, lineNumber);
+                }
+            }
+        } else {
+            for (const key of categories.length ? categories : [...open.keys()]) {
+                if (open.has(key)) {
+                    ranges.push({ category: key, start: open.get(key), end: lineNumber });
+                    open.delete(key);
+                }
+            }
+        }
+    }
+    ranges.push(...[...open].map(([category, start]) => ({ category, start, end: Infinity })));
+    return ranges;
+}
+
+function isSuppressed(ranges, finding) {
+    return ranges.some(
+        (range) =>
+            finding.line >= range.start &&
+            finding.line <= range.end &&
+            (range.category === "*" || range.category === finding.category),
+    );
+}
+
 export function lintMarkdown(source, optionOverrides = {}) {
     const options = { ...DEFAULT_OPTIONS, ...optionOverrides };
     const blocks = extractProseBlocks(source);
@@ -417,6 +496,8 @@ export function lintMarkdown(source, optionOverrides = {}) {
             ? 0.39 * (words.length / sentences.length) + 11.8 * (syllableCount / words.length) - 15.59
             : 0;
 
+    const suppressions = buildSuppressions(source);
+
     return {
         metrics: {
             sentences: sentences.length,
@@ -425,6 +506,6 @@ export function lintMarkdown(source, optionOverrides = {}) {
             fleschKincaidGrade: grade,
             gradeTarget: options.gradeTarget,
         },
-        findings,
+        findings: findings.filter((finding) => !isSuppressed(suppressions, finding)),
     };
 }

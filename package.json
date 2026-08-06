@@ -40,7 +40,7 @@
   "homepage": "https://github.com/arrai-innovations/diction-md#readme",
   "packageManager": "pnpm@11.9.0",
   "devDependencies": {
-    "@arrai-innovations/commitlint-config": "^2.1.0",
+    "@arrai-innovations/commitlint-config": "^3.0.0",
     "@commitlint/cli": "^21.2.1",
     "@eslint/js": "^10.0.1",
     "c8": "^12.0.0",

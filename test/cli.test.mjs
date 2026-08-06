@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const bin = fileURLToPath(new URL("../bin/diction-md.mjs", import.meta.url));
 const dashFixture = fileURLToPath(new URL("./fixtures/dash.md", import.meta.url));
+const suppressedDashFixture = fileURLToPath(new URL("./fixtures/suppressed-dash.md", import.meta.url));
 const bannedWordConfig = fileURLToPath(new URL("./fixtures/banned-word-config.json", import.meta.url));
 
 function run(...args) {
@@ -52,6 +53,13 @@ describe("diction-md CLI", () => {
         const { status } = run("--strict", dashFixture);
 
         assert.equal(status, 1);
+    });
+
+    it("passes --strict when a directive suppresses the error", () => {
+        const { status, stdout } = run("--strict", suppressedDashFixture);
+
+        assert.equal(status, 0);
+        assert.doesNotMatch(stdout, /typography/);
     });
 
     it("produces machine-readable output with --json", () => {
