@@ -124,9 +124,9 @@ function buildLineOffsets(parts, analysis) {
         joined += normalized;
     }
     // Inline spans that cross source lines normalize differently per line;
-    // attribute the whole block to its first line in that case.
+    // attribute the whole block to its first contributing line in that case.
     if (joined !== analysis) {
-        return [{ offset: 0, line: parts[0].line }];
+        return [{ offset: 0, line: offsets[0]?.line ?? parts[0].line }];
     }
     return offsets;
 }
@@ -159,14 +159,17 @@ export function extractProseBlocks(source) {
         const raw = block.parts.map((part) => part.text).join("\n");
         const analysis = analysisInlineMarkdown(raw);
         if (analysis) {
+            const lineOffsets = buildLineOffsets(block.parts, analysis);
             blocks.push({
                 kind: block.kind,
-                line: block.line,
+                // A block can open with lines that normalize to nothing (an HTML
+                // comment, an image); findings belong to the first prose line.
+                line: lineOffsets[0].line,
                 includeInMetrics: block.includeInMetrics,
                 raw,
                 analysis,
                 display: displayInlineMarkdown(raw),
-                lineOffsets: buildLineOffsets(block.parts, analysis),
+                lineOffsets,
             });
         }
         block = undefined;

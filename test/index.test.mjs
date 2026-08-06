@@ -295,6 +295,14 @@ A separate paragraph without punctuation`;
         assert.equal(marketing.line, 2);
     });
 
+    it("attributes block findings to the first prose line", () => {
+        const source =
+            "<!-- an aside for editors -->\nOne thing. Two things. Three things. Four things. Five things. Six things. Seven things.";
+        const finding = lintMarkdown(source).findings.find(({ category }) => category === "long-paragraph");
+
+        assert.equal(finding.line, 2);
+    });
+
     it("does not expose internal accumulator state on blocks", () => {
         const blocks = extractProseBlocks("One paragraph.\n\n- One item.");
 
