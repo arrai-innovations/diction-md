@@ -2,6 +2,17 @@
 
 This project adheres to [semantic versioning](https://semver.org).
 
+## Unreleased
+
+### Added
+
+- The `@arrai-innovations/diction-md/commitlint` entry point exports commitlint rules that check a commit subject and
+  body. Four rules report separately so severity matches intent. `diction-subject-error` and `diction-body-error`
+  default to level 2 and fail the commit. `diction-subject-warning` and `diction-body-warning` default to level 1 and
+  print without blocking. A project opts in through its own commitlint config.
+- The `honorDirectives` option, and the matching `--no-directives` flag, ignore inline suppression comments and report
+  every finding. The commitlint rules set it, so the directive syntax carries no meaning in a commit message.
+
 ## 1.1.0
 
 _2026-08-06_

@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 
 import { lintMarkdown } from "../src/index.mjs";
 
-const USAGE = "Usage: diction-md [--json] [--strict] [--config <file.json>] <file.md> [more.md ...]";
+const USAGE = "Usage: diction-md [--json] [--strict] [--no-directives] [--config <file.json>] <file.md> [more.md ...]";
 
 function fail(message) {
     console.error(message);
@@ -57,6 +57,7 @@ const args = process.argv.slice(2);
 const paths = [];
 let strict = false;
 let json = false;
+let honorDirectives = true;
 let options;
 
 for (let index = 0; index < args.length; index += 1) {
@@ -65,6 +66,8 @@ for (let index = 0; index < args.length; index += 1) {
         strict = true;
     } else if (arg === "--json") {
         json = true;
+    } else if (arg === "--no-directives") {
+        honorDirectives = false;
     } else if (arg === "--config") {
         index += 1;
         if (index === args.length) {
@@ -89,7 +92,8 @@ const results = paths.map((path) => {
     } catch (error) {
         fail(`${path}: ${error.message}`);
     }
-    return { path, result: lintMarkdown(source, options) };
+    // The flag wins over a config file that leaves directives on.
+    return { path, result: lintMarkdown(source, { ...options, ...(honorDirectives ? {} : { honorDirectives }) }) };
 });
 
 if (json) {

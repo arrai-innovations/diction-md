@@ -78,4 +78,16 @@ describe("diction-md CLI", () => {
         assert.match(stdout, /banned/);
         assert.doesNotMatch(stdout, /typography/);
     });
+
+    it("ignores inline directives with --no-directives", () => {
+        const honored = run("--strict", suppressedDashFixture);
+
+        assert.equal(honored.status, 0);
+        assert.doesNotMatch(honored.stdout, /typography/);
+
+        const { status, stdout } = run("--strict", "--no-directives", suppressedDashFixture);
+
+        assert.equal(status, 1);
+        assert.match(stdout, /typography/);
+    });
 });
