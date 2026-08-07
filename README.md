@@ -71,6 +71,30 @@ Pass multiple files or shell-expanded globs:
 pnpm exec diction-md docs/guide/*.md
 ```
 
+With no file arguments it reads standard input and reports findings against
+`<stdin>`. This checks text that is not a file yet, such as a commit message
+or a pull request body:
+
+```console
+git log -1 --format=%B | pnpm exec diction-md
+pnpm exec diction-md --strict < draft.md
+```
+
+A here-document checks a draft without saving it first. Quote the delimiter:
+
+```console
+pnpm exec diction-md << 'EOF'
+Draft prose goes here. The `lintMarkdown` export takes an options object.
+EOF
+```
+
+An unquoted `<< EOF` lets the shell expand the text before the linter sees
+it. That runs every backticked code span as a command and replaces it with
+the output. The prose you check is then not the prose you wrote.
+
+File arguments take precedence, so standard input goes unread when you name a
+file. Running it with neither prints the usage message.
+
 The default output is advisory and exits successfully. `--strict` exits with
 status 1 when the results contain an error-level finding. Among the default
 rules only the dash check reports errors; wording rules opt in through
