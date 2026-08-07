@@ -2,3 +2,5 @@ node_modules/
 coverage/
 .eslintcache
 pnpm-debug.log*
+.idea/
+
