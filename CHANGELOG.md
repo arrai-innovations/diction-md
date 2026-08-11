@@ -6,6 +6,10 @@ This project adheres to [semantic versioning](https://semver.org).
 
 ### Added
 
+- The CLI reads standard input when given no file arguments, and reports findings against `<stdin>`. This checks text
+  that is not a file yet, such as a commit message or a pull request body. File arguments take precedence, and running
+  the command with neither prints the usage message.
+
 - The `@arrai-innovations/diction-md/commitlint` entry point exports commitlint rules that check a commit subject and
   body. Four rules report separately so severity matches intent. `diction-subject-error` and `diction-body-error`
   default to level 2 and fail the commit. `diction-subject-warning` and `diction-body-warning` default to level 1 and

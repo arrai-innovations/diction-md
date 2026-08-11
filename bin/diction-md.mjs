@@ -4,7 +4,14 @@ import { readFileSync } from "node:fs";
 
 import { lintMarkdown } from "../src/index.mjs";
 
-const USAGE = "Usage: diction-md [--json] [--strict] [--no-directives] [--config <file.json>] <file.md> [more.md ...]";
+const USAGE = [
+    "Usage: diction-md [--json] [--strict] [--no-directives] [--config <file.json>] [<file.md> ...]",
+    "       Reads standard input when given no file arguments.",
+].join("\n");
+
+// Findings need a name for the source. Angle brackets keep it from colliding
+// with a path a reader might try to open.
+const STDIN = "<stdin>";
 
 function fail(message) {
     console.error(message);
@@ -81,20 +88,33 @@ for (let index = 0; index < args.length; index += 1) {
     }
 }
 
-if (!paths.length) {
+// Reading a terminal would hang waiting for input that is not coming.
+if (!paths.length && process.stdin.isTTY) {
     fail(USAGE);
 }
 
-const results = paths.map((path) => {
-    let source;
+function read(path) {
     try {
-        source = readFileSync(path, "utf8");
+        return readFileSync(path === STDIN ? 0 : path, "utf8");
     } catch (error) {
         fail(`${path}: ${error.message}`);
     }
-    // The flag wins over a config file that leaves directives on.
-    return { path, result: lintMarkdown(source, { ...options, ...(honorDirectives ? {} : { honorDirectives }) }) };
-});
+}
+
+const sources = paths.length
+    ? paths.map((path) => ({ path, source: read(path) }))
+    : [{ path: STDIN, source: read(STDIN) }];
+
+// Nothing on standard input and no files named is the same mistake as running
+// the command bare, so it earns the same usage message.
+if (!paths.length && !sources[0].source.trim()) {
+    fail(USAGE);
+}
+
+// The flag wins over a config file that leaves directives on.
+const lintOptions = { ...options, ...(honorDirectives ? {} : { honorDirectives }) };
+
+const results = sources.map(({ path, source }) => ({ path, result: lintMarkdown(source, lintOptions) }));
 
 if (json) {
     console.log(JSON.stringify(results, undefined, 2));

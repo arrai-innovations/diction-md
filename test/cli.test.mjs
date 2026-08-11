@@ -12,6 +12,10 @@ function run(...args) {
     return spawnSync(process.execPath, [bin, ...args], { encoding: "utf8" });
 }
 
+function pipe(input, ...args) {
+    return spawnSync(process.execPath, [bin, ...args], { encoding: "utf8", input });
+}
+
 describe("diction-md CLI", () => {
     it("prints usage and fails without file arguments", () => {
         const { status, stderr } = run();
@@ -77,6 +81,37 @@ describe("diction-md CLI", () => {
         assert.equal(status, 1);
         assert.match(stdout, /banned/);
         assert.doesNotMatch(stdout, /typography/);
+    });
+
+    it("reads standard input when given no file arguments", () => {
+        const { status, stdout } = pipe("A clause—here.\n");
+
+        assert.equal(status, 0);
+        assert.match(stdout, /<stdin>:1 error typography/);
+    });
+
+    it("applies options to standard input", () => {
+        const { status, stdout } = pipe("A clause—here.\n", "--strict", "--json");
+        const results = JSON.parse(stdout);
+
+        assert.equal(status, 1);
+        assert.equal(results[0].path, "<stdin>");
+        assert.ok(results[0].result.findings.some(({ category }) => category === "typography"));
+    });
+
+    it("prints usage for empty standard input", () => {
+        const { status, stderr } = pipe("   \n");
+
+        assert.equal(status, 1);
+        assert.match(stderr, /Usage:/);
+    });
+
+    it("prefers file arguments over standard input", () => {
+        const { status, stdout } = pipe("A clause—here.\n", dashFixture);
+
+        assert.equal(status, 0);
+        assert.doesNotMatch(stdout, /<stdin>/);
+        assert.match(stdout, /dash\.md/);
     });
 
     it("ignores inline directives with --no-directives", () => {
