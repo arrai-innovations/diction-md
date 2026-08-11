@@ -24,6 +24,7 @@ rewrite text or judge technical accuracy.
   - [`splitSentences(text)`](#splitsentencestext)
   - [`wordCount(text)`](#wordcounttext)
   - [Defaults](#defaults)
+- [Check commit messages](#check-commit-messages)
 - [Development](#development)
 - [License](#license)
 
@@ -80,6 +81,10 @@ unreadable files stop the run with status 1.
 pnpm exec diction-md --json docs/*.md
 pnpm exec diction-md --strict docs/*.md
 ```
+
+`--no-directives` ignores the inline suppression comments described below and
+reports every finding in the file. Use it to audit what the directives in a
+tree are hiding, or to check text where the comment syntax does not belong.
 
 `--config <file.json>` loads option overrides from a JSON file. Patterns in
 `wordingRules` are strings compiled as regular expressions with flags `gi`
@@ -240,6 +245,73 @@ empty-framing, and idiom rules.
 ```javascript
 import { DEFAULT_OPTIONS, DEFAULT_WORDING_RULES } from "@arrai-innovations/diction-md";
 ```
+
+## Check commit messages
+
+The `@arrai-innovations/diction-md/commitlint` entry point exports
+[commitlint](https://commitlint.js.org) rules that apply the prose checks to a
+commit subject and body. A project opts in; installing the package changes no
+existing commitlint setup on its own.
+
+```console
+pnpm add --save-dev @arrai-innovations/diction-md
+```
+
+Add the plugin and its rule severities to `commitlint.config.mjs`:
+
+```javascript
+import dictionMd, { ruleConfig } from "@arrai-innovations/diction-md/commitlint";
+
+export default {
+    extends: ["@arrai-innovations/commitlint-config"],
+    plugins: [dictionMd],
+    rules: { ...ruleConfig },
+};
+```
+
+A CommonJS config reaches the same rules through a dynamic import:
+
+```javascript
+module.exports = (async () => {
+    const { default: dictionMd, ruleConfig } = await import("@arrai-innovations/diction-md/commitlint");
+    return {
+        extends: ["@arrai-innovations/commitlint-config"],
+        plugins: [dictionMd],
+        rules: { ...ruleConfig },
+    };
+})();
+```
+
+Four rules report separately, so severity matches intent:
+
+| Rule                      | Default level | Effect            |
+| ------------------------- | ------------- | ----------------- |
+| `diction-subject-error`   | 2             | Fails the commit  |
+| `diction-body-error`      | 2             | Fails the commit  |
+| `diction-subject-warning` | 1             | Prints and passes |
+| `diction-body-warning`    | 1             | Prints and passes |
+
+Among the default checks only the dash check reports errors. A commit fails on
+an em dash or en dash, and passes with advice on everything else. Act on the
+advice with `git commit --amend`.
+
+Override a level to change that. Setting `diction-body-warning` to `2` blocks
+on wording; setting it to `0` silences it.
+
+```javascript
+rules: { ...ruleConfig, "diction-body-warning": [0, "always"] },
+```
+
+Pass linter options as the rule value to tune thresholds per project:
+
+```javascript
+rules: { ...ruleConfig, "diction-body-warning": [1, "always", { hardSentenceWords: 30 }] },
+```
+
+Two behaviors differ from linting a file. Git strips comment lines before
+commitlint parses the message, and trailers such as `Refs:` parse as the
+footer, so neither reaches these rules. Inline directives stay off, so the
+`<!-- diction-md-disable -->` syntax has no meaning in a commit message.
 
 ## Development
 

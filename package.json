@@ -7,7 +7,8 @@
     "diction-md": "bin/diction-md.mjs"
   },
   "exports": {
-    ".": "./src/index.mjs"
+    ".": "./src/index.mjs",
+    "./commitlint": "./src/commitlint.mjs"
   },
   "files": [
     "bin/",
@@ -17,7 +18,7 @@
   "scripts": {
     "test": "node --test",
     "coverage": "c8 --reporter=html --reporter=json-summary --reporter=text node --test",
-    "eslint": "eslint --fix bin src test eslint.config.mjs",
+    "eslint": "eslint --fix bin src test commitlint.config.mjs eslint.config.mjs",
     "prettier": "prettier --write .",
     "prepare": "lefthook install"
   },

@@ -94,6 +94,7 @@ export const DEFAULT_OPTIONS = {
     longParagraphSentences: 6,
     wordingRules: DEFAULT_WORDING_RULES,
     prohibitDashes: true,
+    honorDirectives: true,
 };
 
 function normalizeInlineMarkdown(text, renderCode) {
@@ -496,7 +497,10 @@ export function lintMarkdown(source, optionOverrides = {}) {
             ? 0.39 * (words.length / sentences.length) + 11.8 * (syllableCount / words.length) - 15.59
             : 0;
 
-    const suppressions = buildSuppressions(source);
+    // Callers that lint text where a directive would be out of place, such as a
+    // commit message, turn suppression off so the comment syntax carries no
+    // meaning and nobody has a reason to write one.
+    const suppressions = options.honorDirectives ? buildSuppressions(source) : [];
 
     return {
         metrics: {

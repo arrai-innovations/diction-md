@@ -431,4 +431,16 @@ A separate paragraph without punctuation`;
         assert.equal(result.findings.length, 1);
         assert.equal(result.findings[0].category, "very-long-sentence");
     });
+
+    it("ignores inline directives when honorDirectives is off", () => {
+        const source = `<!-- diction-md-disable typography -->
+This clause—wait for it—uses em dashes.`;
+
+        assert.equal(lintMarkdown(source).findings.length, 0);
+
+        const result = lintMarkdown(source, { honorDirectives: false });
+
+        assert.equal(result.findings.length, 1);
+        assert.equal(result.findings[0].category, "typography");
+    });
 });
