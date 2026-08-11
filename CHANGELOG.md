@@ -4,6 +4,10 @@ This project adheres to [semantic versioning](https://semver.org).
 
 ## Unreleased
 
+## 1.2.0
+
+_2026-08-11_
+
 ### Added
 
 - The CLI reads standard input when given no file arguments, and reports findings against `<stdin>`. This checks text
