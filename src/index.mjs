@@ -81,6 +81,12 @@ export const DEFAULT_WORDING_RULES = [
         message: "State the information directly.",
     },
     {
+        category: "empty-framing",
+        pattern:
+            /\b(?:here is (?:an?|the) (?:case|example|scenario)|here are the (?:cases|examples|scenarios)|the following (?:case|example|scenario)s?)\b/gi,
+        message: "State the relevant conditions or result directly.",
+    },
+    {
         category: "idiom",
         pattern: /\b(?:reach for|dive into|kick off|circle back|drill down|by a beat)\b/gi,
         message: "Consider literal wording for readers who use English as an additional language.",

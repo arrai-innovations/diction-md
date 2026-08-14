@@ -4,6 +4,11 @@ This project adheres to [semantic versioning](https://semver.org).
 
 ## Unreleased
 
+### Added
+
+- The empty-framing check reports introductions such as "Here is the case" and "The following example" so writers can
+  state the relevant conditions or result directly.
+
 ## 1.2.0
 
 _2026-08-11_

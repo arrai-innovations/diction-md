@@ -110,6 +110,27 @@ A separate paragraph without punctuation`;
         assert.equal(findings.filter(({ category }) => category === "inflated-wording").length, 1);
     });
 
+    it("reports empty framing around cases, examples, and scenarios", () => {
+        const sources = [
+            "Here is the case that breaks.",
+            "Here is an example that fails.",
+            "Here are the scenarios to consider.",
+            "The following cases reproduce the bug.",
+        ];
+
+        for (const source of sources) {
+            const findings = lintMarkdown(source).findings;
+
+            assert.equal(findings.length, 1, source);
+            assert.equal(findings[0].category, "empty-framing", source);
+            assert.equal(findings[0].message.endsWith("State the relevant conditions or result directly."), true);
+        }
+    });
+
+    it("allows here-is wording that introduces a concrete object", () => {
+        assert.deepEqual(lintMarkdown("Here is the generated configuration.").findings, []);
+    });
+
     it("reports prohibited dash characters as errors", () => {
         const result = lintMarkdown("Replace this clause—then describe the 1–10 range.");
 
