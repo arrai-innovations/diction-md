@@ -127,6 +127,63 @@ A separate paragraph without punctuation`;
         }
     });
 
+    it("reports overused wording and common inflections", () => {
+        const sources = [
+            "Delve into the options.",
+            "These parts form a tapestry.",
+            "The result is a testament to the design.",
+            "This belongs in another realm.",
+            "The landscape keeps changing.",
+            "Use a multifaceted approach.",
+            "Review the system holistically.",
+            "This was a pivotal decision.",
+            "These meetings fostered collaboration.",
+        ];
+
+        for (const source of sources) {
+            const findings = lintMarkdown(source).findings;
+
+            assert.equal(findings.length, 1, source);
+            assert.equal(findings[0].category, "overused-wording", source);
+        }
+    });
+
+    it("reports rhetorical uses of underscore without flagging the literal noun", () => {
+        const findings = lintMarkdown("This underscores the importance of tests.").findings;
+
+        assert.equal(findings.length, 1);
+        assert.equal(findings[0].category, "overused-wording");
+        assert.deepEqual(lintMarkdown("Separate the words with an underscore.").findings, []);
+    });
+
+    it("reports expanded empty preambles", () => {
+        const sources = [
+            "It's important to keep in mind that retries can fail.",
+            "It’s worth noting that retries can fail.",
+            "In today's fast-paced world, requirements change.",
+        ];
+
+        for (const source of sources) {
+            const findings = lintMarkdown(source).findings;
+
+            assert.equal(findings.length, 1, source);
+            assert.equal(findings[0].category, "empty-framing", source);
+        }
+    });
+
+    it("reports formulaic contrasts and catch questions", () => {
+        const sources = ["It is not only fast, but also reliable.", "The catch? It needs a token."];
+
+        for (const source of sources) {
+            const findings = lintMarkdown(source).findings;
+
+            assert.equal(findings.length, 1, source);
+            assert.equal(findings[0].category, "rhetorical-structure", source);
+        }
+
+        assert.deepEqual(lintMarkdown("What is the catch?").findings, []);
+    });
+
     it("allows here-is wording that introduces a concrete object", () => {
         assert.deepEqual(lintMarkdown("Here is the generated configuration.").findings, []);
     });

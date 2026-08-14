@@ -8,6 +8,8 @@ This project adheres to [semantic versioning](https://semver.org).
 
 - The empty-framing check reports introductions such as "Here is the case" and "The following example" so writers can
   state the relevant conditions or result directly.
+- The default wording rules report more overused vocabulary, empty preambles, formulaic `not only` contrasts, and
+  standalone "The catch?" questions.
 
 ## 1.2.0
 

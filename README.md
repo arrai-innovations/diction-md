@@ -39,8 +39,10 @@ The default rules check:
 - long paragraphs
 - marketing language
 - inflated wording
+- overused wording
 - empty framing
 - selected idioms
+- rhetorical structures
 - em dashes and en dashes
 
 The Markdown parser analyzes prose only. It excludes frontmatter, fenced and
@@ -264,7 +266,7 @@ const words = wordCount("A well-known helper ships 12 utilities.");
 
 `DEFAULT_OPTIONS` contains every default threshold and setting.
 `DEFAULT_WORDING_RULES` contains the default marketing, inflated-wording,
-empty-framing, and idiom rules.
+overused-wording, empty-framing, idiom, and rhetorical-structure rules.
 
 ```javascript
 import { DEFAULT_OPTIONS, DEFAULT_WORDING_RULES } from "@arrai-innovations/diction-md";

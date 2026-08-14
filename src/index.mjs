@@ -75,9 +75,21 @@ export const DEFAULT_WORDING_RULES = [
         message: 'Prefer "because".',
     },
     {
+        category: "overused-wording",
+        pattern:
+            /\b(?:delv(?:e|es|ed|ing)|tapestr(?:y|ies)|testaments?|realms?|landscapes?|multifaceted|holistic(?:ally)?|pivotal(?:ly)?|foster(?:s|ed|ing)?)\b/gi,
+        message: "Prefer plain, specific wording or remove it.",
+    },
+    {
+        category: "overused-wording",
+        pattern:
+            /\bunderscor(?:e|es|ed|ing)\s+(?:(?:the\s+)?(?:importance|need|value|role|significance|fact)|that|how|why)\b/gi,
+        message: "State the point directly instead of announcing its importance.",
+    },
+    {
         category: "empty-framing",
         pattern:
-            /\b(?:it is important to note|it should be noted|it is worth noting|please note that|as mentioned|as noted above)\b/gi,
+            /\b(?:it(?: is|'s|’s) important to (?:note|keep in mind)|it should be noted|it(?: is|'s|’s) worth noting|please note that|as mentioned|as noted above|in today(?:'|’)s fast-paced world)\b/gi,
         message: "State the information directly.",
     },
     {
@@ -90,6 +102,16 @@ export const DEFAULT_WORDING_RULES = [
         category: "idiom",
         pattern: /\b(?:reach for|dive into|kick off|circle back|drill down|by a beat)\b/gi,
         message: "Consider literal wording for readers who use English as an additional language.",
+    },
+    {
+        category: "rhetorical-structure",
+        pattern: /\bnot only\b(?=[^.!?\n]{0,120}\bbut\b)/gi,
+        message: "State the relationship without the formulaic contrast.",
+    },
+    {
+        category: "rhetorical-structure",
+        pattern: /(?:^|(?<=[.!?]\s))the catch\?(?=\s|$)/gi,
+        message: "State the limitation directly.",
     },
 ];
 
