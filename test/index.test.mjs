@@ -71,6 +71,75 @@ Important warning.
         );
     });
 
+    it("skips a script block through its closing tag, across blank lines", () => {
+        const source = `<script setup>
+import Button from "./Button.vue";
+
+const powerful = ref(true);
+</script>
+
+Visible prose.`;
+
+        assert.deepEqual(
+            extractProseBlocks(source).map((block) => block.analysis),
+            ["Visible prose."],
+        );
+    });
+
+    it("skips a component block through the next blank line", () => {
+        const source = `<ClientOnly>
+<Demo class="flex gap-3">
+  <header>A powerful header that reads as markup</header>
+  <Widget
+    :view="() => import('./View.vue')"
+  />
+</Demo>
+</ClientOnly>
+
+Visible prose.`;
+
+        assert.deepEqual(
+            extractProseBlocks(source).map((block) => block.analysis),
+            ["Visible prose."],
+        );
+    });
+
+    it("keeps a lone component tag inside a paragraph as prose", () => {
+        const source = "First line of prose.\n<Badge />\nSecond line of prose.";
+
+        assert.deepEqual(
+            extractProseBlocks(source).map((block) => block.analysis),
+            ["First line of prose. Second line of prose."],
+        );
+    });
+
+    it("ends a paragraph at a block-level HTML tag or a multi-line comment", () => {
+        const source = `First paragraph.
+<div>
+Markup text.
+</div>
+
+Second paragraph.
+<!--
+An editor note.
+-->
+Third paragraph.`;
+
+        assert.deepEqual(
+            extractProseBlocks(source).map((block) => block.analysis),
+            ["First paragraph.", "Second paragraph.", "Third paragraph."],
+        );
+    });
+
+    it("keeps prose that opens with inline HTML", () => {
+        const source = "<kbd>Ctrl</kbd> opens the menu.";
+
+        assert.deepEqual(
+            extractProseBlocks(source).map((block) => block.analysis),
+            ["Ctrl opens the menu."],
+        );
+    });
+
     it("does not merge sentences at Markdown block boundaries", () => {
         const source = `A paragraph without punctuation
 

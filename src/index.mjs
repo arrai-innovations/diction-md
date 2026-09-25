@@ -28,6 +28,31 @@ function closesFence(fence, fenceMatch) {
     );
 }
 
+const HTML_BLOCK_TAGS =
+    "address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h[1-6]|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|search|section|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul";
+
+const HTML_ATTRIBUTE = String.raw`\s+[A-Za-z_:][\w.:-]*(?:\s*=\s*(?:[^\s"'=<>\x60]+|'[^']*'|"[^"]*"))?`;
+
+// The CommonMark HTML block kinds, in spec order. A kind with an end pattern
+// closes on the line that matches it, which can be the opening line; a kind
+// without one runs to the next blank line. The last kind is a complete tag
+// alone on its line, such as a Vue component, and cannot interrupt a paragraph.
+const HTML_BLOCK_KINDS = [
+    { start: /^<(?:pre|script|style|textarea)(?:\s|>|$)/i, end: /<\/(?:pre|script|style|textarea)>/i },
+    { start: /^<!--/, end: /-->/ },
+    { start: /^<\?/, end: /\?>/ },
+    { start: /^<![A-Za-z]/, end: />/ },
+    { start: /^<!\[CDATA\[/, end: /\]\]>/ },
+    { start: new RegExp(String.raw`^</?(?:${HTML_BLOCK_TAGS})(?:\s|/?>|$)`, "i") },
+    {
+        start: new RegExp(
+            String.raw`^(?:<(?!(?:pre|script|style|textarea)(?![\w-]))[A-Za-z][\w-]*(?:${HTML_ATTRIBUTE})*\s*/?>|</[A-Za-z][\w-]*\s*>)\s*$`,
+            "i",
+        ),
+        continuesParagraph: true,
+    },
+];
+
 // A directive is an HTML comment on its own line, optionally naming the
 // finding categories it covers. No categories means every category.
 const DIRECTIVE_PATTERN = /^\s{0,3}<!--\s*diction-md-(disable-next-line|disable|enable)((?:[\s,]+[\w-]+)*)\s*-->\s*$/;
@@ -193,6 +218,7 @@ export function extractProseBlocks(source) {
     const blocks = [];
     let block;
     let fence;
+    let htmlBlock;
     let inTable = false;
     let previousKind;
     let inFrontmatter = lines[0]?.trim() === "---";
@@ -250,12 +276,28 @@ export function extractProseBlocks(source) {
             continue;
         }
 
+        if (htmlBlock) {
+            if (htmlBlock.end ? htmlBlock.end.test(originalLine) : !trimmed) {
+                htmlBlock = undefined;
+            }
+            continue;
+        }
+
         if (!trimmed) {
             inTable = false;
             flush();
             continue;
         }
         if (inTable) {
+            continue;
+        }
+
+        const htmlKind = /^ {0,3}</.test(originalLine) && HTML_BLOCK_KINDS.find((kind) => kind.start.test(trimmed));
+        if (htmlKind && !(htmlKind.continuesParagraph && block)) {
+            flush();
+            if (!htmlKind.end?.test(originalLine)) {
+                htmlBlock = htmlKind;
+            }
             continue;
         }
         if (/^:{3,}/.test(trimmed)) {

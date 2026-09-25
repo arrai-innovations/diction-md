@@ -11,6 +11,11 @@ This project adheres to [semantic versioning](https://semver.org).
 - The default wording rules report more overused vocabulary, empty preambles, formulaic `not only` contrasts, and
   standalone "The catch?" questions.
 
+### Fixed
+
+- The parser skips HTML blocks as CommonMark defines them. A `<script>` element or a Vue component in a VitePress page no
+  longer counts as prose in the readability metrics or the checks.
+
 ## 1.2.0
 
 _2026-08-11_

@@ -46,8 +46,10 @@ The default rules check:
 - em dashes and en dashes
 
 The Markdown parser analyzes prose only. It excludes frontmatter, fenced and
-indented code blocks, inline code, tables, thematic breaks, and reference
-link definitions. It also skips `:::` container markers (a VitePress and
+indented code blocks, inline code, tables, thematic breaks, reference link
+definitions, and HTML blocks as CommonMark defines them. An HTML block includes a
+`<script>` or `<style>` element, and a Vue component tag alone on its line
+through the next blank line. It also skips `:::` container markers (a VitePress and
 Docusaurus extension). It keeps paragraphs, headings (ATX and setext), and list items as
 separate blocks. Headings receive wording checks but stay out of the
 readability metrics.
