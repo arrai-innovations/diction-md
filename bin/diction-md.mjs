@@ -9,6 +9,10 @@ const USAGE = [
     "       Reads standard input when given no file arguments.",
 ].join("\n");
 
+const WARNING_NOTE =
+    "Warnings are advisory. Rewrite flagged text only when the rewrite reads better, " +
+    "and never delete connecting words to meet a target.";
+
 // Findings need a name for the source. Angle brackets keep it from colliding
 // with a path a reader might try to open.
 const STDIN = "<stdin>";
@@ -120,6 +124,11 @@ if (json) {
     console.log(JSON.stringify(results, undefined, 2));
 } else {
     console.log(results.map(({ path, result }) => formatReport(path, result)).join("\n"));
+    // Rewriting to clear every warning trades clarity for a better score, so
+    // the report says how to treat them wherever one appears.
+    if (results.some(({ result }) => result.findings.some((finding) => finding.severity === "warning"))) {
+        console.log(`\n${WARNING_NOTE}`);
+    }
 }
 
 const hasErrors = results.some(({ result }) => result.findings.some((finding) => finding.severity === "error"));

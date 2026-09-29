@@ -24,6 +24,27 @@ describe("diction-md CLI", () => {
         assert.match(stderr, /Usage:/);
     });
 
+    it("explains warnings when the report contains one", () => {
+        const { status, stdout } = pipe("We utilize the cache.\n");
+
+        assert.equal(status, 0);
+        assert.match(stdout, /warning inflated-wording/);
+        assert.match(stdout, /Warnings are advisory\./);
+    });
+
+    it("omits the warning note when the report has only errors", () => {
+        const { stdout } = pipe("A clause—here.\n");
+
+        assert.doesNotMatch(stdout, /Warnings are advisory/);
+    });
+
+    it("keeps the warning note out of JSON output", () => {
+        const { stdout } = pipe("We utilize the cache.\n", "--json");
+
+        assert.doesNotMatch(stdout, /Warnings are advisory/);
+        assert.doesNotThrow(() => JSON.parse(stdout));
+    });
+
     it("rejects unknown options", () => {
         const { status, stderr } = run("--nope", dashFixture);
 
