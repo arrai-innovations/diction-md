@@ -2,3 +2,6 @@ packages: []
 
 allowBuilds:
     lefthook: false
+
+overrides:
+    js-yaml: ^4.3.2
