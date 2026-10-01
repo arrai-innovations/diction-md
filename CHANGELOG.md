@@ -10,6 +10,8 @@ This project adheres to [semantic versioning](https://semver.org).
   state the relevant conditions or result directly.
 - The default wording rules report more overused vocabulary, empty preambles, formulaic `not only` contrasts, and
   standalone "The catch?" questions.
+- The text report ends with a note when it contains a warning: warnings are advisory, and a rewrite should not delete
+  connecting words to meet a target. JSON output is unchanged.
 
 ### Fixed
 

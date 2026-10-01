@@ -132,6 +132,24 @@ unless the rule sets `flags`:
 }
 ```
 
+## Act on the results
+
+Errors mark text that breaks a house rule. Fix each one. With the default
+rules, only em dashes and en dashes are errors.
+
+Warnings mark text for a person to review. The checks count words, syllables,
+and patterns. They cannot tell whether a sentence reads well or means what you
+intended. Rewrite flagged text only when the rewrite reads better, and leave it
+otherwise. The text report ends with a reminder whenever it contains a warning.
+
+Never meet a length or grade target by deleting connecting words such as
+"that", "it", or "the". The sentence gets shorter and harder to parse. Split
+it into two sentences instead.
+
+Text that quotes a flagged word, such as a style guide's own example, triggers
+the rule it illustrates. Leave it, or suppress that one category as the next
+section describes.
+
 ## Suppress findings
 
 Directive comments suppress findings for prose you have reviewed and decided
