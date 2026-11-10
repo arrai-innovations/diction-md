@@ -9,8 +9,10 @@ const WORD_PATTERN = /[A-Za-z0-9][A-Za-z0-9'’/-]*/g;
 // also open with an issue or pull request reference such as "#42".
 const SENTENCE_START = String.raw`["'(]?(?:[A-Z0-9]|#\d|\x60|code\b)`;
 
+// "No." before a number, as in "no. 4" or "No. #42", abbreviates "number".
+// Before anything else it can end a sentence, as in "The answer is no."
 const SENTENCE_BOUNDARY = new RegExp(
-    String.raw`(?<=[.!?])(?<!\b(?:[eE]\.g|[iI]\.e|[vV]s|[cC]f)\.)\s+(?=${SENTENCE_START})`,
+    String.raw`(?<=[.!?])(?<!\b(?:[eE]\.g|[iI]\.e|[vV]s|[cC]f)\.)(?!(?<=\b[nN]o\.)\s+#?\d)\s+(?=${SENTENCE_START})`,
     "g",
 );
 
