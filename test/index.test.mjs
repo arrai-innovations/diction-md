@@ -442,7 +442,7 @@ A separate paragraph without punctuation`;
     it("does not join a linked issue reference to the sentence before it", () => {
         const opening = "The parser now keeps each of these short sentences apart from the next one.";
         const result = lintMarkdown(
-            `${opening} [#42](https://example.com/42) tracks the remaining work on the parser.`,
+            `${opening} [#42](https://example.com/42) tracks the remaining work on the parser and its boundary tests.`,
         );
 
         assert.equal(result.metrics.sentences, 2);
