@@ -318,6 +318,29 @@ A separate paragraph without punctuation`;
         assert.equal(block.analysis, "Wrap code, code, and code in one clause.");
     });
 
+    it("reads a code span delimited by any run of backticks as one span", () => {
+        for (const source of ["Run ``x`` now.", "Use ``a ` b`` and stop.", "Wrap ```a `` b``` here."]) {
+            const block = extractProseBlocks(source)[0];
+
+            assert.equal(block.display, source);
+            assert.equal(block.analysis.split(" ").filter((word) => word === "code").length, 1);
+            assert.doesNotMatch(block.analysis, /`/);
+        }
+    });
+
+    it("splits before a sentence that opens with a double-backtick span", () => {
+        const source = "Stop here. ``a ` b`` starts the next sentence.";
+
+        assert.equal(lintMarkdown(source).metrics.sentences, 2);
+        assert.equal(extractProseBlocks(source)[0].analysis, "Stop here. code starts the next sentence.");
+    });
+
+    it("keeps a backtick run without a matching closer as literal text", () => {
+        for (const source of ["Odd ``a` stays.", "Lonely `` run here."]) {
+            assert.equal(extractProseBlocks(source)[0].analysis, source);
+        }
+    });
+
     it("splits a sentence that opens with an inline code span", () => {
         const source = "Both inputs are required. `pkKey` names the primary key field.";
         const result = lintMarkdown(source);

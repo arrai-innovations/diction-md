@@ -171,9 +171,13 @@ function normalizeInlineMarkdown(text) {
     // Code spans hold out of every pass below. Their content is literal, so a
     // `<tag>` or a trailing `*` inside one must not read as HTML or emphasis.
     // NUL cannot appear in Markdown source, so it delimits the placeholders.
+    // As in CommonMark, a span opens with a run of backticks and closes with a
+    // run of the same length, so a doubled delimiter can hold a single
+    // backtick. Neither run can touch another backtick, and the content cannot
+    // end with one. A run with no closer stays literal text.
     const guarded = text
         .replace(/\0/g, "")
-        .replace(/`([^`\n]*)`/g, (match, content) => `\0${codeSpans.push(content) - 1}\0`);
+        .replace(/(?<!`)(`+)(?!`)[^\n]*?[^`\n]\1(?!`)/g, (match) => `\0${codeSpans.push(match) - 1}\0`);
 
     const normalized = guarded
         .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
@@ -193,7 +197,7 @@ function normalizeInlineMarkdown(text) {
         // split() puts each captured placeholder index at an odd position.
         if (index % 2) {
             analysis += "code";
-            display += `\`${codeSpans[piece]}\``;
+            display += codeSpans[piece];
             codeSpanEnds.push({ analysis: analysis.length, display: display.length });
         } else {
             analysis += piece;
