@@ -22,6 +22,8 @@ This project adheres to [semantic versioning](https://semver.org).
   punctuation, as in `` `a. B` ``. Before, the finding printed the whole paragraph.
 - The parser skips HTML blocks as CommonMark defines them. A `<script>` element or a Vue component in a VitePress page no
   longer counts as prose in the readability metrics or the checks.
+- Typography and wording-rule findings print the sentence that holds the match instead of the whole paragraph. A
+  typography finding covers every dash in its paragraph, so it prints the sentences from the first dash to the last.
 
 ## 1.2.0
 
