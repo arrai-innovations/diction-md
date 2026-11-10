@@ -4,12 +4,12 @@ This project adheres to [semantic versioning](https://semver.org).
 
 ## Unreleased
 
+## 1.5.0
+
+_2026-11-10_
+
 ### Added
 
-- The empty-framing check reports introductions such as "Here is the case" and "The following example" so writers can
-  state the relevant conditions or result directly.
-- The default wording rules report more overused vocabulary, empty preambles, formulaic `not only` contrasts, and
-  standalone "The catch?" questions.
 - The text report ends with a note when it contains a warning: warnings are advisory, and a rewrite should not delete
   connecting words to meet a target. JSON output is unchanged.
 
@@ -20,13 +20,31 @@ This project adheres to [semantic versioning](https://semver.org).
   sentence joined the one before it, so the pair could report a long sentence that neither one is.
 - A sentence finding prints only the flagged sentence when an inline code span in the paragraph contains sentence
   punctuation, as in `` `a. B` ``. Before, the finding printed the whole paragraph.
+- Typography and wording-rule findings print the sentence that holds the match instead of the whole paragraph. A
+  typography finding covers every dash in its paragraph, so it prints the sentences from the first dash to the last.
 - Code spans follow CommonMark. A span delimited by two or more backticks, as in ``` ``a ` b`` ```, counts as one span,
   and so does a span that wraps onto the next line. An escaped backtick does not open a span. Before, these cases read
   prose as code or code as prose, which miscounted words and could join a sentence to the one before it.
+
+## 1.4.0
+
+_2026-09-24_
+
+### Fixed
+
 - The parser skips HTML blocks as CommonMark defines them. A `<script>` element or a Vue component in a VitePress page no
   longer counts as prose in the readability metrics or the checks.
-- Typography and wording-rule findings print the sentence that holds the match instead of the whole paragraph. A
-  typography finding covers every dash in its paragraph, so it prints the sentences from the first dash to the last.
+
+## 1.3.0
+
+_2026-09-08_
+
+### Added
+
+- The empty-framing check reports introductions such as "Here is the case" and "The following example" so writers can
+  state the relevant conditions or result directly.
+- The default wording rules report more overused vocabulary, empty preambles, formulaic `not only` contrasts, and
+  standalone "The catch?" questions.
 
 ## 1.2.0
 
