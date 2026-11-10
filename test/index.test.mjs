@@ -468,7 +468,14 @@ A separate paragraph without punctuation`;
     });
 
     it("splits before a sentence that opens with a repository or merge request reference", () => {
-        for (const reference of ["owner/repo#42", "!42", "group/project!42", "group/subgroup/project!42"]) {
+        for (const reference of [
+            "owner/repo#42",
+            "!42",
+            "group/project!42",
+            "group/subgroup/project!42",
+            "project!42",
+            "project#42",
+        ]) {
             assert.deepEqual(splitSentences(`The fix landed. ${reference} tracks it.`), [
                 "The fix landed.",
                 `${reference} tracks it.`,
@@ -476,21 +483,23 @@ A separate paragraph without punctuation`;
         }
     });
 
-    it("does not split before a lowercase start without the full reference shape", () => {
-        for (const start of ["owner/repo#tag", "owner/repo", "owner#42", "and/or", "! now", "# now"]) {
+    it("does not split before a lowercase start without a reference number", () => {
+        for (const start of ["owner/repo#tag", "owner/repo", "project#tag", "and/or", "! now", "# now"]) {
             const text = `The fix landed. ${start} stays.`;
             assert.deepEqual(splitSentences(text), [text]);
         }
     });
 
-    it("does not split after no. when a number follows", () => {
+    it("does not split after no. when a number or reference follows", () => {
         assert.deepEqual(
             splitSentences(
-                "See PR no. #42 for details. See MR no. !42 next. Use item No. 4 next. The answer is no. Then we left.",
+                "See PR no. #42 for details. See MR no. !42 next. See PR no. owner/repo#42 too. See MR no. group/project!42 too. Use item No. 4 next. The answer is no. Then we left.",
             ),
             [
                 "See PR no. #42 for details.",
                 "See MR no. !42 next.",
+                "See PR no. owner/repo#42 too.",
+                "See MR no. group/project!42 too.",
                 "Use item No. 4 next.",
                 "The answer is no.",
                 "Then we left.",

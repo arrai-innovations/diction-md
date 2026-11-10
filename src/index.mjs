@@ -7,17 +7,19 @@ const WORD_PATTERN = /[A-Za-z0-9][A-Za-z0-9'’/-]*/g;
 // start: the token "code" in analysis text, a backtick in display text. Both
 // join the sentence-case starts the boundary already accepts. A sentence can
 // also open with an issue, pull request, or merge request reference: "#42" or
-// "!42", optionally after a repository path such as "owner/repo" or
-// "group/subgroup/project". A lowercase word without that full shape does not
-// start a sentence.
-const REFERENCE_START = String.raw`(?:[\w.-]+(?:/[\w.-]+)+)?[#!]\d`;
+// "!42", optionally after a project or path such as "project!42",
+// "owner/repo#42", or "group/subgroup/project!42". The pattern accepts any
+// such path, including a file path with a numbered anchor, because each one
+// starts a new sentence when it follows sentence-ending punctuation. A
+// lowercase word without "#" or "!" and a digit does not start a sentence.
+const REFERENCE_START = String.raw`(?:[\w.-]+(?:/[\w.-]+)*)?[#!]\d`;
 const SENTENCE_START = String.raw`["'(]?(?:[A-Z0-9]|${REFERENCE_START}|\x60|code\b)`;
 
-// "No." before a number, as in "no. 4", "No. #42", or "no. !42", abbreviates
-// "number". Before anything else it can end a sentence, as in "The answer is
-// no."
+// "No." before a number or a reference, as in "no. 4", "No. #42", or
+// "no. owner/repo#42", abbreviates "number". Before anything else it can end
+// a sentence, as in "The answer is no."
 const SENTENCE_BOUNDARY = new RegExp(
-    String.raw`(?<=[.!?])(?<!\b(?:[eE]\.g|[iI]\.e|[vV]s|[cC]f)\.)(?!(?<=\b[nN]o\.)\s+[#!]?\d)\s+(?=${SENTENCE_START})`,
+    String.raw`(?<=[.!?])(?<!\b(?:[eE]\.g|[iI]\.e|[vV]s|[cC]f)\.)(?!(?<=\b[nN]o\.)\s+(?:${REFERENCE_START}|\d))\s+(?=${SENTENCE_START})`,
     "g",
 );
 
