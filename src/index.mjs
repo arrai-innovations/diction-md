@@ -535,6 +535,22 @@ function isSuppressed(ranges, finding) {
     );
 }
 
+// Returns the display text of the sentences that hold the analysis range from
+// start to end. A match can sit outside every sentence, for example in a span
+// with no words, so the whole block is the fallback.
+function displaySentencesAt(block, sentences, start, end) {
+    const first = sentences.find((sentence) => start >= sentence.offset && start < sentenceEnd(sentence));
+    const last = sentences.find((sentence) => end > sentence.offset && end <= sentenceEnd(sentence));
+    if (!first || !last) {
+        return block.display;
+    }
+    return block.display.slice(displayOffset(block, first.offset), displayOffset(block, sentenceEnd(last)));
+}
+
+function sentenceEnd(sentence) {
+    return sentence.offset + sentence.text.length;
+}
+
 export function lintMarkdown(source, optionOverrides = {}) {
     const options = { ...DEFAULT_OPTIONS, ...optionOverrides };
     const blocks = extractBlocks(source);
@@ -594,12 +610,15 @@ export function lintMarkdown(source, optionOverrides = {}) {
         if (options.prohibitDashes) {
             const dashes = allMatches(block.analysis, /[—–]/g);
             if (dashes.length) {
+                const lastDash = dashes.at(-1);
                 findings.push({
                     severity: "error",
                     category: "typography",
                     line: lineAt(block, dashes[0].index),
                     message: "Replace em dashes and en dashes with other punctuation or wording.",
-                    text: block.display,
+                    // One finding covers every dash in the block, so its text
+                    // runs from the first dash's sentence to the last one's.
+                    text: displaySentencesAt(block, blockSentences, dashes[0].index, lastDash.index + 1),
                 });
             }
         }
@@ -611,7 +630,7 @@ export function lintMarkdown(source, optionOverrides = {}) {
                     category: rule.category,
                     line: lineAt(block, match.index),
                     message: `"${match[0]}": ${rule.message}`,
-                    text: block.display,
+                    text: displaySentencesAt(block, blockSentences, match.index, match.index + match[0].length),
                 });
             }
         }

@@ -373,6 +373,60 @@ A separate paragraph without punctuation`;
         );
     });
 
+    it("prints only the sentence that holds a dash or wording match", () => {
+        const result = lintMarkdown(
+            "The cache works well. This powerful runtime handles it — mostly. We utilize it daily.",
+        );
+
+        assert.deepEqual(
+            result.findings.map(({ category, text }) => ({ category, text })),
+            [
+                { category: "typography", text: "This powerful runtime handles it — mostly." },
+                { category: "marketing", text: "This powerful runtime handles it — mostly." },
+                { category: "inflated-wording", text: "We utilize it daily." },
+            ],
+        );
+    });
+
+    it("prints a wording match's sentence with its code spans in display form", () => {
+        const result = lintMarkdown("Set `a. B` first. The `c. D` helper is robust. Done.");
+
+        assert.deepEqual(
+            result.findings.map(({ category, text }) => ({ category, text })),
+            [{ category: "marketing", text: "The `c. D` helper is robust." }],
+        );
+    });
+
+    it("prints every sentence from the first dash to the last in one typography finding", () => {
+        const result = lintMarkdown("Intro is fine. First — dash here. Middle is fine. Last – dash there. After it.");
+
+        assert.deepEqual(
+            result.findings.map(({ category, line, text }) => ({ category, line, text })),
+            [{ category: "typography", line: 1, text: "First — dash here. Middle is fine. Last – dash there." }],
+        );
+    });
+
+    it("prints the whole block when a dash sits outside every sentence", () => {
+        // A block with no words has no sentences, so no sentence holds the dash.
+        assert.deepEqual(
+            lintMarkdown("Before.\n\n— –\n\nAfter.").findings.map(({ category, line, text }) => ({
+                category,
+                line,
+                text,
+            })),
+            [{ category: "typography", line: 3, text: "— –" }],
+        );
+    });
+
+    it("prints a one-sentence paragraph whole for dash and wording findings", () => {
+        const source = "One sentence with a powerful claim — and a dash.";
+
+        assert.deepEqual(
+            lintMarkdown(source).findings.map(({ text }) => text),
+            [source, source],
+        );
+    });
+
     it("treats setext headings as headings excluded from metrics", () => {
         const source = "Heading Text\n===\n\nSecond Heading\n---\n\nBody prose sentence.";
         const blocks = extractProseBlocks(source);
