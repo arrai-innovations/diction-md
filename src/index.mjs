@@ -153,7 +153,11 @@ export const DEFAULT_OPTIONS = {
     honorDirectives: true,
 };
 
-function normalizeInlineMarkdown(text, renderCode) {
+// Returns the analysis text, where each code span reads as the word "code",
+// and the display text, where each code span keeps its backticks. Each entry
+// in codeSpans records where one span ends in both texts, so an offset in the
+// analysis text maps onto the display text.
+function normalizeInlineMarkdown(text) {
     const codeSpans = [];
     // Code spans hold out of every pass below. Their content is literal, so a
     // `<tag>` or a trailing `*` inside one must not read as HTML or emphasis.
@@ -162,7 +166,7 @@ function normalizeInlineMarkdown(text, renderCode) {
         .replace(/\0/g, "")
         .replace(/`([^`\n]*)`/g, (match, content) => `\0${codeSpans.push(content) - 1}\0`);
 
-    return guarded
+    const normalized = guarded
         .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
         .replace(/!\[[^\]]*\]\[[^\]]*\]/g, "")
         .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
@@ -171,16 +175,40 @@ function normalizeInlineMarkdown(text, renderCode) {
         .replace(/\*{1,2}([^*\n]+)\*{1,2}/g, "$1")
         .replace(/(?<![A-Za-z0-9])_{1,2}([^_\n]+)_{1,2}(?![A-Za-z0-9])/g, "$1")
         .replace(/\s+/g, " ")
-        .trim()
-        .replace(/\0(\d+)\0/g, (match, index) => renderCode(codeSpans[index]));
+        .trim();
+
+    let analysis = "";
+    let display = "";
+    const spanEnds = [];
+    for (const [index, piece] of normalized.split(/\0(\d+)\0/).entries()) {
+        // split() puts each captured placeholder index at an odd position.
+        if (index % 2) {
+            analysis += "code";
+            display += `\`${codeSpans[piece]}\``;
+            spanEnds.push({ analysis: analysis.length, display: display.length });
+        } else {
+            analysis += piece;
+            display += piece;
+        }
+    }
+    return { analysis, display, codeSpans: spanEnds };
 }
 
 function analysisInlineMarkdown(text) {
-    return normalizeInlineMarkdown(text, () => "code");
+    return normalizeInlineMarkdown(text).analysis;
 }
 
-function displayInlineMarkdown(text) {
-    return normalizeInlineMarkdown(text, (content) => `\`${content}\``);
+// A sentence starts after whitespace and ends at punctuation. The word "code"
+// holds neither, so a sentence offset never falls inside a code span.
+function displayOffset(block, offset) {
+    let shift = 0;
+    for (const span of block.codeSpans) {
+        if (span.analysis > offset) {
+            break;
+        }
+        shift = span.display - span.analysis;
+    }
+    return offset + shift;
 }
 
 function buildLineOffsets(parts, analysis) {
@@ -232,7 +260,7 @@ export function extractProseBlocks(source) {
         }
         previousKind = block.kind;
         const raw = block.parts.map((part) => part.text).join("\n");
-        const analysis = analysisInlineMarkdown(raw);
+        const { analysis, display, codeSpans } = normalizeInlineMarkdown(raw);
         if (analysis) {
             const lineOffsets = buildLineOffsets(block.parts, analysis);
             blocks.push({
@@ -243,7 +271,8 @@ export function extractProseBlocks(source) {
                 includeInMetrics: block.includeInMetrics,
                 raw,
                 analysis,
-                display: displayInlineMarkdown(raw),
+                display,
+                codeSpans,
                 lineOffsets,
             });
         }
@@ -491,15 +520,17 @@ export function lintMarkdown(source, optionOverrides = {}) {
 
     for (const block of blocks) {
         const blockSentences = splitSentencesWithOffsets(block.analysis);
-        const displaySentences = splitSentences(block.display);
-        // Inline code can contain sentence punctuation, so the display text may
-        // split differently than the analysis text.
-        const aligned = displaySentences.length === blockSentences.length;
 
         if (block.includeInMetrics) {
-            for (const [index, sentence] of blockSentences.entries()) {
+            for (const sentence of blockSentences) {
                 const words = wordCount(sentence.text);
-                const displaySentence = aligned ? displaySentences[index] : block.display;
+                // The display sentence comes from the analysis split, because
+                // punctuation inside a code span could split the display text
+                // where the analysis text does not.
+                const displaySentence = block.display.slice(
+                    displayOffset(block, sentence.offset),
+                    displayOffset(block, sentence.offset + sentence.text.length),
+                );
                 const line = lineAt(block, sentence.offset);
                 sentences.push(sentence.text);
                 if (words >= options.hardSentenceWords) {
