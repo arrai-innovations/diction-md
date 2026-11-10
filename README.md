@@ -17,6 +17,7 @@ rewrite text or judge technical accuracy.
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [Run the CLI](#run-the-cli)
+- [Act on the results](#act-on-the-results)
 - [Suppress findings](#suppress-findings)
 - [Use the library](#use-the-library)
   - [`lintMarkdown(source, options)`](#lintmarkdownsource-options)
@@ -26,6 +27,7 @@ rewrite text or judge technical accuracy.
   - [Defaults](#defaults)
 - [Check commit messages](#check-commit-messages)
 - [Development](#development)
+  - [Release](#release)
 - [License](#license)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -372,6 +374,44 @@ pnpm; `pnpm install` also installs the git hooks. Commit messages follow the
 Conventional Commits format enforced by commitlint.
 
 Notable changes per release are recorded in [CHANGELOG.md](./CHANGELOG.md).
+
+### Release
+
+1. In `CHANGELOG.md`, move the entries under `## Unreleased` into a new
+   `## X.Y.Z` section with the release date, and leave `## Unreleased` empty.
+   Choose the version by semantic versioning. A breaking change raises the
+   major version, and an `Added` entry raises the minor version. A release
+   with only `Fixed` entries raises the patch version.
+2. Set `version` in `package.json` to the same number.
+3. Commit both files as `chore: release X.Y.Z` and push the commit to `main`.
+4. Tag the release commit and push the tag:
+
+    ```console
+    git tag vX.Y.Z
+    git push origin vX.Y.Z
+    ```
+
+5. Publish with pnpm:
+
+    ```console
+    pnpm login
+    pnpm publish
+    ```
+
+    `pnpm publish` refuses to run unless the working tree is clean, the
+    current branch is `main`, and the branch matches its remote. It publishes
+    to the public npm registry that `publishConfig` names.
+
+6. Confirm that the registry serves the new version as `latest`:
+
+    ```console
+    npm view @arrai-innovations/diction-md dist-tags
+    ```
+
+npm can ask you to authenticate in the browser during `pnpm publish`. If the
+command then fails with `409 Conflict` and "Cannot publish over previously
+staged version", the publish may have gone through before the error. Run the
+check in step 6 before you try again.
 
 ## License
 
