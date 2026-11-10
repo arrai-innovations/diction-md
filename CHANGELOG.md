@@ -15,7 +15,8 @@ This project adheres to [semantic versioning](https://semver.org).
 
 ### Fixed
 
-- A sentence that opens with a `#42`-style issue or pull request reference counts as a new sentence. Before, the
+- A sentence that opens with an issue, pull request, or merge request reference counts as a new sentence. The reference
+  can be `#42` or `!42`, alone or after a project or repository path, as in `project!42` or `owner/repo#42`. Before, the
   sentence joined the one before it, so the pair could report a long sentence that neither one is.
 - A sentence finding prints only the flagged sentence when an inline code span in the paragraph contains sentence
   punctuation, as in `` `a. B` ``. Before, the finding printed the whole paragraph.
