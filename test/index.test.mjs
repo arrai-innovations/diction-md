@@ -329,13 +329,48 @@ A separate paragraph without punctuation`;
         ]);
     });
 
-    it("falls back to the whole block when display sentences do not align", () => {
+    it("keeps a sentence whole when a code span inside it holds sentence punctuation", () => {
         const source = `Call \`render(). Then\` again ${"and again ".repeat(20)}and again.`;
         const result = lintMarkdown(source);
 
         assert.equal(result.findings.length, 1);
         assert.equal(result.findings[0].category, "very-long-sentence");
         assert.equal(result.findings[0].text, source);
+    });
+
+    it("prints only the flagged sentence when a code span holds sentence punctuation", () => {
+        const long =
+            "This second sentence keeps going with enough plain words to pass the warning threshold for sentence length, which the linter sets at twenty-five words today.";
+
+        for (const span of ["`a. B`", "`a. #1`"]) {
+            const result = lintMarkdown(`Set ${span} first. ${long} The \`x\` call ends it.`);
+
+            assert.equal(result.metrics.sentences, 3);
+            assert.deepEqual(
+                result.findings.map(({ category, text }) => ({ category, text })),
+                [{ category: "long-sentence", text: long }],
+            );
+        }
+    });
+
+    it("prints a flagged sentence with its code spans in display form", () => {
+        const result = lintMarkdown("Stop here. The `a. B` value was set by the loader.");
+
+        assert.deepEqual(
+            result.findings.map(({ category, text }) => ({ category, text })),
+            [{ category: "passive-voice", text: "The `a. B` value was set by the loader." }],
+        );
+    });
+
+    it("prints a block-final sentence that ends on a code span in full", () => {
+        // The last span renders longer than the word "code", so an end offset
+        // that skipped its shift would cut the sentence short.
+        const result = lintMarkdown("Stop here. The value was set by `x` and `loader`");
+
+        assert.deepEqual(
+            result.findings.map(({ category, text }) => ({ category, text })),
+            [{ category: "passive-voice", text: "The value was set by `x` and `loader`" }],
+        );
     });
 
     it("treats setext headings as headings excluded from metrics", () => {
