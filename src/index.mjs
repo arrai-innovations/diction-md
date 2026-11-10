@@ -155,7 +155,7 @@ export const DEFAULT_OPTIONS = {
 
 // Returns the analysis text, where each code span reads as the word "code",
 // and the display text, where each code span keeps its backticks. Each entry
-// in codeSpans records where one span ends in both texts, so an offset in the
+// in codeSpanEnds records where one span ends in both texts, so an offset in the
 // analysis text maps onto the display text.
 function normalizeInlineMarkdown(text) {
     const codeSpans = [];
@@ -179,30 +179,34 @@ function normalizeInlineMarkdown(text) {
 
     let analysis = "";
     let display = "";
-    const spanEnds = [];
+    const codeSpanEnds = [];
     for (const [index, piece] of normalized.split(/\0(\d+)\0/).entries()) {
         // split() puts each captured placeholder index at an odd position.
         if (index % 2) {
             analysis += "code";
             display += `\`${codeSpans[piece]}\``;
-            spanEnds.push({ analysis: analysis.length, display: display.length });
+            codeSpanEnds.push({ analysis: analysis.length, display: display.length });
         } else {
             analysis += piece;
             display += piece;
         }
     }
-    return { analysis, display, codeSpans: spanEnds };
+    return { analysis, display, codeSpanEnds };
 }
 
 function analysisInlineMarkdown(text) {
     return normalizeInlineMarkdown(text).analysis;
 }
 
-// A sentence starts after whitespace and ends at punctuation. The word "code"
-// holds neither, so a sentence offset never falls inside a code span.
+// A sentence starts after whitespace and ends at punctuation or at the end of
+// the block. The word "code" holds neither whitespace nor punctuation, so a
+// sentence offset falls before a code span, after it, or exactly at its end.
+// The last case happens when a block ends on a code span, and the offset must
+// take that span's shift, so the loop stops only at a span that ends past the
+// offset.
 function displayOffset(block, offset) {
     let shift = 0;
-    for (const span of block.codeSpans) {
+    for (const span of block.codeSpanEnds) {
         if (span.analysis > offset) {
             break;
         }
@@ -244,7 +248,17 @@ function lineAt(block, offset) {
     return line;
 }
 
+// Blocks carry codeSpanEnds for lintMarkdown. extractProseBlocks leaves the
+// field out, so the exported block shape does not include internal offsets.
 export function extractProseBlocks(source) {
+    return extractBlocks(source).map((block) => {
+        const exported = { ...block };
+        delete exported.codeSpanEnds;
+        return exported;
+    });
+}
+
+function extractBlocks(source) {
     const lines = source.split(/\r?\n/);
     const blocks = [];
     let block;
@@ -260,7 +274,7 @@ export function extractProseBlocks(source) {
         }
         previousKind = block.kind;
         const raw = block.parts.map((part) => part.text).join("\n");
-        const { analysis, display, codeSpans } = normalizeInlineMarkdown(raw);
+        const { analysis, display, codeSpanEnds } = normalizeInlineMarkdown(raw);
         if (analysis) {
             const lineOffsets = buildLineOffsets(block.parts, analysis);
             blocks.push({
@@ -272,7 +286,7 @@ export function extractProseBlocks(source) {
                 raw,
                 analysis,
                 display,
-                codeSpans,
+                codeSpanEnds,
                 lineOffsets,
             });
         }
@@ -514,7 +528,7 @@ function isSuppressed(ranges, finding) {
 
 export function lintMarkdown(source, optionOverrides = {}) {
     const options = { ...DEFAULT_OPTIONS, ...optionOverrides };
-    const blocks = extractProseBlocks(source);
+    const blocks = extractBlocks(source);
     const findings = [];
     const sentences = [];
 

@@ -362,6 +362,17 @@ A separate paragraph without punctuation`;
         );
     });
 
+    it("prints a block-final sentence that ends on a code span in full", () => {
+        // The last span renders longer than the word "code", so an end offset
+        // that skipped its shift would cut the sentence short.
+        const result = lintMarkdown("Stop here. The value was set by `x` and `loader`");
+
+        assert.deepEqual(
+            result.findings.map(({ category, text }) => ({ category, text })),
+            [{ category: "passive-voice", text: "The value was set by `x` and `loader`" }],
+        );
+    });
+
     it("treats setext headings as headings excluded from metrics", () => {
         const source = "Heading Text\n===\n\nSecond Heading\n---\n\nBody prose sentence.";
         const blocks = extractProseBlocks(source);
