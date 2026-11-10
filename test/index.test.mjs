@@ -425,6 +425,14 @@ A separate paragraph without punctuation`;
         ]);
     });
 
+    it("splits before a sentence that opens with an issue reference", () => {
+        assert.deepEqual(splitSentences("The fix landed. #42 tracks the follow-up. See the #hashtag note."), [
+            "The fix landed.",
+            "#42 tracks the follow-up.",
+            "See the #hashtag note.",
+        ]);
+    });
+
     it("counts words consistently between checks and metrics", () => {
         const result = lintMarkdown("A well-known helper ships 12 utilities.");
 
