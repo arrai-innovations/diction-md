@@ -425,6 +425,33 @@ A separate paragraph without punctuation`;
         ]);
     });
 
+    it("splits before a sentence that opens with an issue reference", () => {
+        assert.deepEqual(splitSentences("The fix landed. #42 tracks the follow-up. #hashtag stays."), [
+            "The fix landed.",
+            "#42 tracks the follow-up. #hashtag stays.",
+        ]);
+    });
+
+    it("does not split after no. when a number follows", () => {
+        assert.deepEqual(
+            splitSentences("See PR no. #42 for details. Use item No. 4 next. The answer is no. Then we left."),
+            ["See PR no. #42 for details.", "Use item No. 4 next.", "The answer is no.", "Then we left."],
+        );
+    });
+
+    it("does not join a linked issue reference to the sentence before it", () => {
+        const opening = "The parser now keeps each of these short sentences apart from the next one.";
+        const result = lintMarkdown(
+            `${opening} [#42](https://example.com/42) tracks the remaining work on the parser and its boundary tests.`,
+        );
+
+        assert.equal(result.metrics.sentences, 2);
+        assert.deepEqual(
+            result.findings.filter((finding) => finding.category.endsWith("long-sentence")),
+            [],
+        );
+    });
+
     it("counts words consistently between checks and metrics", () => {
         const result = lintMarkdown("A well-known helper ships 12 utilities.");
 

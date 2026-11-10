@@ -15,6 +15,8 @@ This project adheres to [semantic versioning](https://semver.org).
 
 ### Fixed
 
+- A sentence that opens with a `#42`-style issue or pull request reference counts as a new sentence. Before, the
+  sentence joined the one before it, so the pair could report a long sentence that neither one is.
 - The parser skips HTML blocks as CommonMark defines them. A `<script>` element or a Vue component in a VitePress page no
   longer counts as prose in the readability metrics or the checks.
 
