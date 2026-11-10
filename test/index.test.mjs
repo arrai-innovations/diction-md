@@ -335,6 +335,44 @@ A separate paragraph without punctuation`;
         assert.equal(extractProseBlocks(source)[0].analysis, "Stop here. code starts the next sentence.");
     });
 
+    it("reads a code span that wraps across lines as one span", () => {
+        const source =
+            "Line one is here.\nThe ``x\ny\nz`` spans lines. Wrap `a\nb` and `c` end.\nLast line has utilize.";
+        const block = extractProseBlocks(source)[0];
+
+        assert.equal(
+            block.analysis,
+            "Line one is here. The code spans lines. Wrap code and code end. Last line has utilize.",
+        );
+        assert.equal(
+            block.display,
+            "Line one is here. The ``x y z`` spans lines. Wrap `a b` and `c` end. Last line has utilize.",
+        );
+        assert.deepEqual(
+            lintMarkdown(source).findings.map(({ category, line }) => ({ category, line })),
+            [{ category: "inflated-wording", line: 6 }],
+        );
+    });
+
+    it("does not open a code span with an escaped backtick", () => {
+        for (const source of ["Use \\`` not code`` here.", "Use \\` not code` here."]) {
+            assert.equal(extractProseBlocks(source)[0].analysis, source);
+        }
+        // A backslash inside a span is literal, and an escaped backslash
+        // leaves the backtick after it free to open a span.
+        assert.equal(extractProseBlocks("Keep `foo\\`bar` here.")[0].analysis, "Keep codebar` here.");
+        assert.equal(extractProseBlocks("Keep \\\\`code` here.")[0].analysis, "Keep \\\\code here.");
+    });
+
+    it("prints a sentence finding with its multi-backtick spans as written", () => {
+        const result = lintMarkdown("Stop here. The ``a ` b`` value was set by ```loader```.");
+
+        assert.deepEqual(
+            result.findings.map(({ category, text }) => ({ category, text })),
+            [{ category: "passive-voice", text: "The ``a ` b`` value was set by ```loader```." }],
+        );
+    });
+
     it("keeps a backtick run without a matching closer as literal text", () => {
         for (const source of ["Odd ``a` stays.", "Lonely `` run here."]) {
             assert.equal(extractProseBlocks(source)[0].analysis, source);

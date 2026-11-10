@@ -162,23 +162,92 @@ export const DEFAULT_OPTIONS = {
     honorDirectives: true,
 };
 
+const ASCII_PUNCTUATION = /[!-/:-@[-`{-~]/;
+
+// Marks a line break that a code span swallowed, so the guarded text still
+// splits into one piece per source line.
+const SPAN_LINE_BREAK = "\u0002";
+
+// Replaces each code span with a placeholder. Code spans hold out of every
+// other inline pass. Their content is literal, so a `<tag>` or a trailing `*`
+// inside one must not read as HTML or emphasis. NUL cannot appear in Markdown
+// source, so it delimits the placeholders.
+//
+// The scan follows CommonMark. Outside a span, a backslash escapes the next
+// punctuation character, so an escaped backtick opens nothing. A span opens
+// with a run of backticks and closes with the next run of the same length,
+// which can sit on a later line of the block. A run with no closer stays
+// literal text. A line ending inside a span reads as a space.
+function guardCodeSpans(text) {
+    const source = text.replaceAll("\0", "").replaceAll(SPAN_LINE_BREAK, "");
+    const codeSpans = [];
+    const specials = /[`\\]/g;
+    let guarded = "";
+    let index = 0;
+    while (index < source.length) {
+        specials.lastIndex = index;
+        const special = specials.exec(source);
+        if (!special) {
+            guarded += source.slice(index);
+            break;
+        }
+        guarded += source.slice(index, special.index);
+        index = special.index;
+        if (source[index] === "\\") {
+            // An escape consumes the next character only when it is punctuation.
+            const escaped = ASCII_PUNCTUATION.test(source[index + 1] ?? "") ? 2 : 1;
+            guarded += source.slice(index, index + escaped);
+            index += escaped;
+            continue;
+        }
+        const runEnd = backtickRunEnd(source, index);
+        const closer = findCloser(source, runEnd, runEnd - index);
+        if (closer === -1) {
+            guarded += source.slice(index, runEnd);
+            index = runEnd;
+            continue;
+        }
+        const span = source.slice(index, closer + runEnd - index);
+        const lineBreaks = span.split("\n").length - 1;
+        guarded += `\0${codeSpans.push(span.replace(/\n/g, " ")) - 1}\0${SPAN_LINE_BREAK.repeat(lineBreaks)}`;
+        index = closer + runEnd - index;
+    }
+    return { guarded, codeSpans };
+}
+
+function backtickRunEnd(text, start) {
+    let end = start;
+    while (text[end] === "`") {
+        end += 1;
+    }
+    return end;
+}
+
+// Returns the start of the next backtick run of exactly the given length, or
+// -1 when there is none.
+function findCloser(text, from, length) {
+    let start = text.indexOf("`", from);
+    while (start !== -1) {
+        const end = backtickRunEnd(text, start);
+        if (end - start === length) {
+            return start;
+        }
+        start = text.indexOf("`", end);
+    }
+    return -1;
+}
+
 // Returns the analysis text, where each code span reads as the word "code",
 // and the display text, where each code span keeps its backticks. Each entry
 // in codeSpanEnds records where one span ends in both texts, so an offset in the
 // analysis text maps onto the display text.
 function normalizeInlineMarkdown(text) {
-    const codeSpans = [];
-    // Code spans hold out of every pass below. Their content is literal, so a
-    // `<tag>` or a trailing `*` inside one must not read as HTML or emphasis.
-    // NUL cannot appear in Markdown source, so it delimits the placeholders.
-    // As in CommonMark, a span opens with a run of backticks and closes with a
-    // run of the same length, so a doubled delimiter can hold a single
-    // backtick. Neither run can touch another backtick, and the content cannot
-    // end with one. A run with no closer stays literal text.
-    const guarded = text
-        .replace(/\0/g, "")
-        .replace(/(?<!`)(`+)(?!`)[^\n]*?[^`\n]\1(?!`)/g, (match) => `\0${codeSpans.push(match) - 1}\0`);
+    const { guarded, codeSpans } = guardCodeSpans(text);
+    return { ...normalizeGuarded(guarded.replaceAll(SPAN_LINE_BREAK, ""), codeSpans), guarded, codeSpans };
+}
 
+// Runs the inline passes other than code spans over guarded text.
+function normalizeGuarded(guarded, codeSpans) {
     const normalized = guarded
         .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
         .replace(/!\[[^\]]*\]\[[^\]]*\]/g, "")
@@ -207,10 +276,6 @@ function normalizeInlineMarkdown(text) {
     return { analysis, display, codeSpanEnds };
 }
 
-function analysisInlineMarkdown(text) {
-    return normalizeInlineMarkdown(text).analysis;
-}
-
 // A sentence starts after whitespace and ends at punctuation or at the end of
 // the block. The word "code" holds neither whitespace nor punctuation, so a
 // sentence offset falls before a code span, after it, or exactly at its end.
@@ -228,11 +293,15 @@ function displayOffset(block, offset) {
     return offset + shift;
 }
 
-function buildLineOffsets(parts, analysis) {
+// Normalizes the block's guarded text one source line at a time, so a code
+// span that crosses lines stays one span and the line pieces still join into
+// the block's analysis text.
+function buildLineOffsets(parts, { guarded, codeSpans, analysis }) {
+    const pieces = guarded.replaceAll(SPAN_LINE_BREAK, "\n").split("\n");
     const offsets = [];
     let joined = "";
-    for (const part of parts) {
-        const normalized = analysisInlineMarkdown(part.text);
+    for (const [index, part] of parts.entries()) {
+        const normalized = normalizeGuarded(pieces[index] ?? "", codeSpans).analysis;
         if (!normalized) {
             continue;
         }
@@ -287,9 +356,10 @@ function extractBlocks(source) {
         }
         previousKind = block.kind;
         const raw = block.parts.map((part) => part.text).join("\n");
-        const { analysis, display, codeSpanEnds } = normalizeInlineMarkdown(raw);
+        const normalized = normalizeInlineMarkdown(raw);
+        const { analysis, display, codeSpanEnds } = normalized;
         if (analysis) {
-            const lineOffsets = buildLineOffsets(block.parts, analysis);
+            const lineOffsets = buildLineOffsets(block.parts, normalized);
             blocks.push({
                 kind: block.kind,
                 // A block can open with lines that normalize to nothing (an HTML
