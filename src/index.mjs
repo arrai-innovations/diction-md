@@ -4,8 +4,10 @@ const PASSIVE =
 const WORD_PATTERN = /[A-Za-z0-9][A-Za-z0-9'’/-]*/g;
 
 // A sentence can open with an inline code span, which reads as a lowercase
-// start: the token "code" in analysis text, a backtick in display text. Both
-// join the sentence-case starts the boundary already accepts. A sentence can
+// start. lintMarkdown splits analysis text, where the span is the token
+// "code". The backtick alternative covers callers that pass display text,
+// where the span keeps its backticks, to splitSentences. Both join the
+// sentence-case starts the boundary already accepts. A sentence can
 // also open with an issue, pull request, or merge request reference: "#42" or
 // "!42", optionally after a project or path such as "project!42",
 // "owner/repo#42", or "group/subgroup/project!42". The pattern accepts any
